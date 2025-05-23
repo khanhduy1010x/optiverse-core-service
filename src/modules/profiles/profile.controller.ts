@@ -32,5 +32,58 @@ import { ProfileResponse } from './dto/response/ProfileResponse.dto';
 @ApiExtraModels(ApiResponseWrapper, ProfileResponse)
 @Controller('/profile')
 export class ProfileController {
-  
+  constructor(private readonly userService: UserService) {}
+
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+    type: JwtPayload,
+  })
+  @UseGuards(JwtAuthGuard)
+  @Get('')
+  getProfile(@Request() req) {
+    const user = req.user as JwtPayload;
+    return user;
+  }
+
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiBody({ type: UpdateProfileRequest })
+  @ApiCreatedResponse({
+    description: 'User registered successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(ProfileResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully',
+    type: ProfileResponse,
+  })
+  @UseGuards(JwtAuthGuard)
+  @Patch('')
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileRequest: UpdateProfileRequest,
+  ): Promise<ApiResponseWrapper<ProfileResponse> | void> {
+    const user = req.user as JwtPayload;
+
+    const profile = await this.userService.updateProfile(user.user_id, updateProfileRequest);
+
+    if (!profile) {
+      return;
+    }
+
+    const response = new ProfileResponse(profile);
+
+    return new ApiResponseWrapper<ProfileResponse>(response);
+  }
 }
