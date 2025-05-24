@@ -199,4 +199,51 @@ export class AuthController {
     return await this.authService.logOutMutil(user);
   }
 
+
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
+  })
+  @ApiBody({ type: LoginRequest })
+  @ApiOkResponse({
+    description: 'Successfully logged in',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
+  })
+  @ApiBody({ type: LoginRequest })
+  @ApiOkResponse({
+    description: 'Successfully logged in',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @Post('/login')
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  handleLogin(@Request() req): Promise<ApiResponseWrapper<LoginResponse> | void> {
+    const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
+    return this.authService.login(req.user, ip, '', false);
+  }
 }
