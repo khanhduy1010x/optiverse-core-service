@@ -6,5 +6,15 @@ import { UpdateProfileRequest } from '../profiles/dto/request/UpdateProfileReque
 
 @Injectable()
 export class UserRepository {
-  
+      constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
+
+   async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+    async save(user: User): Promise<User | null> {
+    return this.userModel.create(user);
+  }
+    async findOne(username: string): Promise<User | null> {
+    return this.userModel.findOne({ email: username }).lean();
+  }
 }
