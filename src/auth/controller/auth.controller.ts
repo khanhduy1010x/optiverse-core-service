@@ -41,6 +41,85 @@ export class AuthController {
     constructor(private authService: AuthService,
     private readonly userService: UserService,
   ) {}
+
+  @ApiOperation({ summary: 'Register new account' })
+  @ApiBody({ type: CreateAccountRequest })
+  @ApiCreatedResponse({
+    description: 'User registered successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(CreateAccountResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Email already exists or invalid data' })
+  @Public()
+  @Post('/register')
+  async createAccount(
+    @Body() request: CreateAccountRequest,
+  ): Promise<ApiResponseWrapper<CreateAccountResponse>> {
+    return this.authService.createAccount(request);
+  }
+
+  @ApiOperation({ summary: 'Verify account using OTP' })
+  @ApiBody({ type: VerifyAccountRequest })
+  @ApiOkResponse({
+    description: 'Account verified successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: {
+              oneOf: [
+                { $ref: getSchemaPath(CreateAccountResponse) },
+                { $ref: getSchemaPath(ResetPasswordResponse) },
+              ],
+            },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid OTP or expired verification' })
+  @Public()
+  @Post('verify-account')
+  async verifyAccount(
+    @Body() request: VerifyAccountRequest,
+  ): Promise<ApiResponseWrapper<CreateAccountResponse | ResetPasswordResponse>> {
+    return this.authService.verifyAccount(request);
+  }
+
+
+  @ApiOperation({ summary: 'Resend OTP' })
+  @ApiBody({ type: SendOtpRequest })
+  @ApiOkResponse({
+    description: 'OTP sent successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Too many OTP requests' })
+  @Public()
+  @Post('resend-otp')
+  async resendOtp(@Body() request: SendOtpRequest): Promise<ApiResponseWrapper<null>> {
+    return this.authService.sendOtp(request);
+  }
+
   @ApiOperation({ summary: 'Change password' })
   @ApiBody({ type: ChangePasswordRequest })
   @ApiOkResponse({
@@ -72,6 +151,7 @@ export class AuthController {
       request.newPassword,
     );
   }
+  
   @ApiOperation({ summary: 'Logout from a single session' })
   @ApiBody({ type: LogOutSingleReques })
   @ApiOkResponse({

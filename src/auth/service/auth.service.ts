@@ -35,6 +35,79 @@ export class AuthService {
     private userSessionRepository: UserSessionRepository,
   ) {}
 
+  async createAccount(request: CreateAccountRequest): Promise<ApiResponse<CreateAccountResponse>> {
+    try {
+      const user = await this.userRepository.findByEmail(request.email);
+      if (user) {
+        if (user.isVerified) {
+          throw new AppException(ErrorCode.EMAIL_EXISTS);
+        } else {
+          throw new AppException(ErrorCode.EMAIL_EXISTS_NOT_VERIFY);
+        }
+      }
+      const hashedPassword = await this.hashPasswordService.hashPassword(request.password);
+      const userModel = plainToInstance(User, {
+        email: request.email,
+        full_name: request.full_name,
+        password_hash: hashedPassword,
+      });
+      const userSaved = await this.userRepository.save(userModel);
+      if (!userSaved) throw new AppException(ErrorCode.SERVER_ERROR);
+      const createAccountResp = Object.assign(new CreateAccountResponse(), {
+        email: userSaved.email,
+        user_id: userSaved._id,
+        verify: false,
+      });
+      await this.otpVerificationService.sendOtp(userSaved.email, OtpType.EMAIL_VERIFICATION);
+      return new ApiResponse<CreateAccountResponse>(createAccountResp);
+    } catch (error) {
+      if (error instanceof AppException) {
+        throw error;
+      }
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+  }
+
+  async sendOtp(request: SendOtpRequest): Promise<ApiResponse<null>> {
+    const otpType = request.isVerify ? OtpType.EMAIL_VERIFICATION : OtpType.FORGOT_PASSWORD;
+    await this.otpVerificationService.sendOtp(request.email, otpType, true);
+    return new ApiResponse();
+  }
+
+
+  async verifyAccount(
+    request: VerifyAccountRequest,
+  ): Promise<ApiResponse<CreateAccountResponse | ResetPasswordResponse>> {
+    const otpType = request.isVerify ? OtpType.EMAIL_VERIFICATION : OtpType.FORGOT_PASSWORD;
+    const isVerify = await this.otpVerificationService.verifyOtp(
+      request.email,
+      request.otp,
+      otpType,
+    );
+    if (!isVerify) throw new AppException(ErrorCode.INVALID_OTP);
+    const userVerify = await this.usersService.updateVerifyAccount(request.email);
+    if (request.isVerify) {
+      const createAccountResp = Object.assign(new CreateAccountResponse(), {
+        email: userVerify?.email,
+        user_id: userVerify?._id,
+        verify: userVerify?.isVerified,
+      });
+      return new ApiResponse<CreateAccountResponse>(createAccountResp);
+    }
+    const user = await this.usersService.findOne(request.email);
+    return new ApiResponse<ResetPasswordResponse>({
+      reset_token: await this.generateResetToken(user),
+    });
+  }
+
+   async generateResetToken(user: any): Promise<string> {
+    const payload = { sub: user._id, email: user.email, full_name: user.full_name };
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<string>('JWT_RESET_PASSWORD_TOKEN_EXPIRED'),
+    });
+  }
+
   async changePassword(
     user: JwtPayload,
     currentPassword: string,
