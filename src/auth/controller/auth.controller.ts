@@ -38,11 +38,59 @@ import { UserResponse } from '../dto/response/UserResponse.dto';
 @ApiExtraModels(ApiResponseWrapper, LoginResponse, CreateAccountResponse, ResetPasswordResponse)
 @Controller('/auth')
 export class AuthController {
-    constructor(private authService: AuthService,
+  
+  constructor(private authService: AuthService,
     private readonly userService: UserService,
   ) {}
 
-  @ApiOperation({ summary: 'Register new account' })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
+  })
+  @ApiBody({ type: LoginRequest })
+  @ApiOkResponse({
+    description: 'Successfully logged in',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
+  })
+  @ApiBody({ type: LoginRequest })
+  @ApiOkResponse({
+    description: 'Successfully logged in',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @Post('/login')
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  handleLogin(@Request() req): Promise<ApiResponseWrapper<LoginResponse> | void> {
+    const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
+    return this.authService.login(req.user, ip, '', false);
+  }
+
+@ApiOperation({ summary: 'Register new account' })
   @ApiBody({ type: CreateAccountRequest })
   @ApiCreatedResponse({
     description: 'User registered successfully',
@@ -135,7 +183,6 @@ export class AuthController {
       ],
     },
   })
-
   @ApiResponse({ status: 400, description: 'Current password does not match' })
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
@@ -200,50 +247,4 @@ export class AuthController {
   }
 
 
-  @ApiOperation({
-    summary: 'User login',
-    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
-  })
-  @ApiBody({ type: LoginRequest })
-  @ApiOkResponse({
-    description: 'Successfully logged in',
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(ApiResponseWrapper) },
-        {
-          type: 'object',
-          properties: {
-            data: { $ref: getSchemaPath(LoginResponse) },
-          },
-        },
-      ],
-    },
-  })
-  @ApiOperation({
-    summary: 'User login',
-    description: 'Authenticate user using email & password. Returns access and refresh tokens.',
-  })
-  @ApiBody({ type: LoginRequest })
-  @ApiOkResponse({
-    description: 'Successfully logged in',
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(ApiResponseWrapper) },
-        {
-          type: 'object',
-          properties: {
-            data: { $ref: getSchemaPath(LoginResponse) },
-          },
-        },
-      ],
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @Post('/login')
-  @Public()
-  @UseGuards(LocalAuthGuard)
-  handleLogin(@Request() req): Promise<ApiResponseWrapper<LoginResponse> | void> {
-    const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
-    return this.authService.login(req.user, ip, '', false);
-  }
 }
