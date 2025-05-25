@@ -38,5 +38,38 @@ import { UserResponse } from '../dto/response/UserResponse.dto';
 @ApiExtraModels(ApiResponseWrapper, LoginResponse, CreateAccountResponse, ResetPasswordResponse)
 @Controller('/auth')
 export class AuthController {
-  
+    constructor(private authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
+  @ApiOperation({ summary: 'Change password' })
+  @ApiBody({ type: ChangePasswordRequest })
+  @ApiOkResponse({
+    description: 'Password changed successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Current password does not match' })
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async handleChangPassword(
+    @Request() req,
+    @Body() request: ChangePasswordRequest,
+  ): Promise<ApiResponseWrapper<null>> {
+    const user = req.user as JwtPayload;
+
+    return await this.authService.changePassword(
+      user,
+      request.currentPassword,
+      request.newPassword,
+    );
+  }
+
 }
