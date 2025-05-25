@@ -56,6 +56,7 @@ export class AuthController {
       ],
     },
   })
+
   @ApiResponse({ status: 400, description: 'Current password does not match' })
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
@@ -70,6 +71,52 @@ export class AuthController {
       request.currentPassword,
       request.newPassword,
     );
+  }
+  @ApiOperation({ summary: 'Logout from a single session' })
+  @ApiBody({ type: LogOutSingleReques })
+  @ApiOkResponse({
+    description: 'Logged out from single session successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('log-out-single')
+  async logOutSingle(
+    @Request() req,
+    @Body() request: LogOutSingleReques,
+  ): Promise<ApiResponseWrapper<null>> {
+    const user = req.user as JwtPayload;
+    return await this.authService.logOutSingle(user, request.session_id);
+  }
+
+  @ApiOperation({ summary: 'Logout from multiple sessions' })
+  @ApiBody({ type: LogOutSingleReques })
+  @ApiOkResponse({
+    description: 'Logged out from multiple sessions successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('log-out-multi')
+  async logOutMutil(@Request() req): Promise<ApiResponseWrapper<null>> {
+    const user = req.user as JwtPayload;
+    return await this.authService.logOutMutil(user);
   }
 
 }
