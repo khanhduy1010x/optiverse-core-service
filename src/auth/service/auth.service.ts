@@ -24,7 +24,7 @@ import { JwtPayload } from '../dto/JwtPayload.dto';
 import { UserResponse } from '../dto/response/UserResponse.dto';
 @Injectable()
 export class AuthService {
-   constructor(
+      constructor(
     private usersService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -34,6 +34,7 @@ export class AuthService {
     private otpVerificationService: OtpVerificationService,
     private userSessionRepository: UserSessionRepository,
   ) {}
+
   async changePassword(
     user: JwtPayload,
     currentPassword: string,
@@ -48,6 +49,17 @@ export class AuthService {
     if (!isEqual) throw new AppException(ErrorCode.CURRENT_PASSWORD_NOT_MATCH);
     const newPasswordHash = await this.hashPasswordService.hashPassword(newPassword);
     this.userRepository.updatePassword(user.email, newPasswordHash);
+        return new ApiResponse();
+
+  }
+
+   async logOutSingle(user: JwtPayload, _id: string): Promise<ApiResponse<null>> {
+    await this.userSessionRepository.removeRefreshToken_Single(_id, user.user_id);
+    return new ApiResponse();
+   }
+
+  async logOutMutil(user: JwtPayload): Promise<ApiResponse<null>> {
+    await this.userSessionRepository.removeRefreshToken_Multi(user.user_id, user.session_id);
     return new ApiResponse();
   }
 
