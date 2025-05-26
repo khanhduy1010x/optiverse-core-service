@@ -246,5 +246,53 @@ export class AuthController {
     return await this.authService.logOutMutil(user);
   }
 
+    @ApiOperation({ summary: 'Send OTP for password reset' })
+  @ApiBody({ type: SendOtpRequest })
+  @ApiOkResponse({
+    description: 'OTP sent for password reset',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Too many OTP requests' })
+  @Public()
+  @Post('send-otp-reset-password')
+  async sendOtpResetPassword(@Body() request: SendOtpRequest): Promise<ApiResponseWrapper<null>> {
+    return this.authService.sendOtp(request);
+  }
+
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiBody({ type: ResetPasswordRequest })
+  @ApiOkResponse({
+    description: 'Password reset successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          properties: {
+            data: { type: 'null', example: null },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid reset token' })
+  @UseGuards(JwtAuthGuard)
+  @Post('reset-password')
+  async resetPassword(
+    @Request() req,
+    @Body() request: ResetPasswordRequest,
+  ): Promise<ApiResponseWrapper<null>> {
+    const user = req.user as JwtPayload;
+    return await this.authService.resetNewPassword(user, request.newPassword);
+  }
+
 
 }
