@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Request, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Get, Param, Response } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { LocalAuthGuard } from '../passport/local-auth.guard';
 import { JwtAuthGuard } from '../passport/jwt-auth.guard';
@@ -32,6 +32,7 @@ import { AppException } from 'src/common/exceptions/app.exception';
 import { UserService } from 'src/modules/users/user.service';
 import { User } from 'src/modules/users/user.schema';
 import { UserResponse } from '../dto/response/UserResponse.dto';
+import { ErrorCode } from 'src/common/exceptions/error-code.enum';
 
 @ApiTags('Auth')
 @ApiBearerAuth('access-token')
@@ -42,6 +43,23 @@ export class AuthController {
   constructor(private authService: AuthService,
     private readonly userService: UserService,
   ) {}
+
+   @Get('verify')
+  @UseGuards(JwtAuthGuard) // Sử dụng JwtAuthGuard
+  @ApiOperation({ summary: 'Verify JWT and return user info' })
+  @ApiOkResponse({ description: 'JWT is valid' })
+  @ApiResponse({ status: 401, description: 'Invalid or missing token' })
+  async verifyToken(@Request() req, @Response() res){
+    const payload = req.user as JwtPayload; 
+    const user = await this.userService.findOne(payload.email);
+    console.log(payload);
+    if (!user) {
+      throw new AppException(ErrorCode.NOT_FOUND);
+    }
+    const userInfoBase64 = Buffer.from(JSON.stringify(user)).toString('base64')
+    res.setHeader('X-User-Info', userInfoBase64);
+    return res.status(200).json({});
+  }
 
   @ApiOperation({
     summary: 'User login',

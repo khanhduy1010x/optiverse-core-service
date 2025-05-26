@@ -31,7 +31,7 @@ export class AuthService {
     private userRepository: UserRepository,
     private jwtService: JwtService,
     private hashPasswordService: HashPasswordService,
-
+    private otpVerificationService: OtpVerificationService,
     private usersService: UserService,
 
 
