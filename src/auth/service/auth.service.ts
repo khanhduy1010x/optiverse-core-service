@@ -24,21 +24,21 @@ import { JwtPayload } from '../dto/JwtPayload.dto';
 import { UserResponse } from '../dto/response/UserResponse.dto';
 @Injectable()
 export class AuthService {
-    constructor(
+  constructor(
     private userSessionService: UserSessionService,
     private userSessionRepository: UserSessionRepository,
     private configService: ConfigService,
     private userRepository: UserRepository,
     private jwtService: JwtService,
-        private hashPasswordService: HashPasswordService,
+    private hashPasswordService: HashPasswordService,
 
-        private usersService: UserService,
+    private usersService: UserService,
 
 
 
-  ) {}
+  ) { }
 
-      async login(
+  async login(
     user: any,
     ip: string,
     token: string = '',
@@ -64,7 +64,7 @@ export class AuthService {
     return new ApiResponse<LoginResponse>({ access_token, refresh_token });
   }
 
-    async validateGoogleUser(user: any, code: string): Promise<User | null> {
+  async validateGoogleUser(user: any, code: string): Promise<User | null> {
     try {
       console.log(code);
       const { data: tokenData } = await axios.post('https://oauth2.googleapis.com/token', null, {
@@ -113,7 +113,7 @@ export class AuthService {
       throw new AppException(ErrorCode.INVALID_TOKEN_GOOGLE);
     }
   }
-    async generateRefreshToken(user: any, userSession_id: string): Promise<string> {
+  async generateRefreshToken(user: any, userSession_id: string): Promise<string> {
     const payload = {
       sub: user._id,
       email: user.email,
@@ -126,7 +126,7 @@ export class AuthService {
     });
   }
 
-    async generateAccessToken(user: any, userSession_id: string): Promise<string> {
+  async generateAccessToken(user: any, userSession_id: string): Promise<string> {
     const payload = {
       sub: user._id,
       email: user.email,
@@ -136,7 +136,7 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-    async validateUser(username: string, pass: string): Promise<User | null> {
+  async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.usersService.findOne(username);
     if (!user || !user.password_hash) return null;
     const isTruePassword = await this.hashPasswordService.comparePassword(pass, user.password_hash);
@@ -243,4 +243,12 @@ export class AuthService {
     await this.userSessionRepository.removeRefreshToken_Multi(user.user_id, user.session_id);
     return new ApiResponse();
   }
+  async resetNewPassword(user: JwtPayload, newPassword: string): Promise<ApiResponse<null>> {
+    console.log(newPassword);
+    const passwordHash = await this.hashPasswordService.hashPassword(newPassword);
+    const userSaved = this.userRepository.updatePassword(user.email, passwordHash);
+    if (!userSaved) throw new AppException(ErrorCode.SERVER_ERROR);
+    return new ApiResponse();
+  }
+
 }
