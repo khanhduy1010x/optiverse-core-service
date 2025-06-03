@@ -31,4 +31,8 @@ export class UserRepository {
   async updateProfile(id, updateProfileRequest: UpdateProfileRequest): Promise<User | null> {
     return await this.userModel.findByIdAndUpdate(id, updateProfileRequest);
   }
+  
+  async findUsersByIds(userIds: string[]): Promise<User[]> {
+    return await this.userModel.find({ _id: { $in: userIds } }).lean();
+  }
 }

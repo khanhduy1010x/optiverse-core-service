@@ -311,6 +311,51 @@ export class AuthController {
     const user = req.user as JwtPayload;
     return await this.authService.resetNewPassword(user, request.newPassword);
   }
+  
 
+  @Public()
+  @Get('get-info-by-email/:email')
+  async getInfoByEmail(@Param('email') email: string) {
+    return await this.userService.findOneByEmail(email);
+  }
 
+  @ApiOperation({ summary: 'Get users by array of IDs' })
+  @ApiBody({ 
+    schema: {
+      type: 'object',
+      properties: {
+        userIds: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          description: 'Array of user IDs'
+        }
+      }
+    }
+  })
+  @ApiOkResponse({
+    description: 'Users retrieved successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(UserResponse) }
+            },
+          },
+        },
+      ],
+    },
+  })
+  @Public()
+  @Post('get-users-by-ids')
+  async getUsersByIds(
+    @Body() request: { userIds: string[] },
+  ): Promise<ApiResponseWrapper<UserResponse[]>> {
+    return await this.authService.getUsersByIds(request.userIds);
+  }
 }

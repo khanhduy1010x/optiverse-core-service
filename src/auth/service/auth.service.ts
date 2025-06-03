@@ -251,4 +251,26 @@ export class AuthService {
     return new ApiResponse();
   }
 
+  async getUsersByIds(userIds: string[]): Promise<ApiResponse<UserResponse[]>> {
+    try {
+      const users = await this.userRepository.findUsersByIds(userIds);
+      
+      if (!users || users.length === 0) {
+        return new ApiResponse<UserResponse[]>([]);
+      }
+      
+      const userResponses = users.map(user => {
+        return {
+          user_id: user._id.toString(),
+          email: user.email,
+          full_name: user.full_name,
+          avatar_url: user.avatar_url || '',
+        } as UserResponse;
+      });
+      
+      return new ApiResponse<UserResponse[]>(userResponses);
+    } catch (error) {
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+  }
 }
