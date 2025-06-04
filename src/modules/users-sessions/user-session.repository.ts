@@ -17,6 +17,11 @@ export class UserSessionRepository {
     }
     return true;
   }
+
+  async getAllUserSessions(user_id: string): Promise<UserSession[]> {
+    return await this.userSessionModel.find({ user_id: new Types.ObjectId(user_id) }).exec();
+  }
+
   async removeRefreshToken_Single(_id: string, user_id: string): Promise<UserSession | null> {
     return await this.userSessionModel.findOneAndUpdate(
       { _id: new Types.ObjectId(_id), user_id: new Types.ObjectId(user_id) },

@@ -8,7 +8,12 @@ import { UpdateProfileRequest } from '../profiles/dto/request/UpdateProfileReque
 export class UserRepository {
   constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+    const user = await this.userModel.findOne({ email }).lean(); // dùng .lean() để trả về plain object
+    if (user) {
+      const { password_hash, ...rest } = user;
+      return rest;
+    }
+    return user;
   }
   async save(user: User): Promise<User | null> {
     return this.userModel.create(user);
@@ -29,7 +34,7 @@ export class UserRepository {
       .lean();
   }
   async updateProfile(id, updateProfileRequest: UpdateProfileRequest): Promise<User | null> {
-    return await this.userModel.findByIdAndUpdate(id, updateProfileRequest);
+    return await this.userModel.findByIdAndUpdate(id, updateProfileRequest, { new: true });
   }
   
   async findUsersByIds(userIds: string[]): Promise<User[]> {
