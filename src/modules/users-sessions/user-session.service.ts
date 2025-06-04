@@ -16,4 +16,8 @@ export class UserSessionService {
     const userSession = Object.assign(new UserSession(), sessionData);
     return await this.userSessionRepository.addNewSession(userSession);
   }
+
+  async getAllUserSessions(user_id: string): Promise<UserSession[]> {
+    return await this.userSessionRepository.getAllUserSessions(user_id);
+  }
 }
