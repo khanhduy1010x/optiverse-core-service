@@ -358,4 +358,53 @@ export class AuthController {
   ): Promise<ApiResponseWrapper<UserResponse[]>> {
     return await this.authService.getUsersByIds(request.userIds);
   }
+  @ApiOperation({ summary: 'Login with Google' })
+  @ApiBody({ type: LoginGoogleRequest })
+  @ApiOkResponse({
+    description: 'Google login successful',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid Google token' })
+  @Public()
+  @Post('google')
+  async googleLogin(
+    @Request() req,
+    @Body() request: LoginGoogleRequest,
+  ): Promise<ApiResponseWrapper<LoginResponse> | void> {
+    const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
+    return this.authService.login(null, ip, request.token, true,request.is_web);
+  }
+    @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOkResponse({
+    description: 'Access token refreshed successfully',
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseWrapper) },
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: getSchemaPath(LoginResponse) },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh-token')
+  async hanleRefreshToken(@Request() req): Promise<ApiResponseWrapper<LoginResponse>> {
+    const user = req.user as JwtPayload;
+    const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
+    return await this.authService.refreshToken(user, ip);
+  }
 }
