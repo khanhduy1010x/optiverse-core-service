@@ -40,4 +40,12 @@ export class UserRepository {
   async findUsersByIds(userIds: string[]): Promise<User[]> {
     return await this.userModel.find({ _id: { $in: userIds } }).lean();
   }
+
+  async updateAvatar(userId: string, avatarUrl: string): Promise<User | null> {
+    return await this.userModel.findByIdAndUpdate(
+      userId,
+      { avatar_url: avatarUrl },
+      { new: true }
+    ).lean();
+  }
 }
