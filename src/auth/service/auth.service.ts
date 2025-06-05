@@ -43,8 +43,9 @@ export class AuthService {
     ip: string,
     token: string = '',
     isLoginGoogle: boolean = false,
+    is_web: boolean = false
   ): Promise<ApiResponse<LoginResponse> | void> {
-    const userGoogle = isLoginGoogle ? await this.validateGoogleUser(user, token) : null;
+    const userGoogle = isLoginGoogle ? await this.validateGoogleUser(user, token,is_web) : null;
     const userData = userGoogle ?? user;
     if (!userData) {
       throw new AppException(ErrorCode.NOT_FOUND);
@@ -64,14 +65,14 @@ export class AuthService {
     return new ApiResponse<LoginResponse>({ access_token, refresh_token });
   }
 
-  async validateGoogleUser(user: any, code: string): Promise<User | null> {
+  async validateGoogleUser(user: any, code: string, is_web: boolean): Promise<User | null> {
     try {
       console.log(code);
       const { data: tokenData } = await axios.post('https://oauth2.googleapis.com/token', null, {
         params: {
           client_id: this.configService.get<string>('GOOGLE_CLIENT_ID'),
           client_secret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-          redirect_uri: this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+          redirect_uri: is_web ?  this.configService.get<string>('GOOGLE_CALLBACK_URL_WEB') : this.configService.get<string>('GOOGLE_CALLBACK_URL'),
           grant_type: 'authorization_code',
           code,
         },
@@ -272,5 +273,21 @@ export class AuthService {
     } catch (error) {
       throw new AppException(ErrorCode.SERVER_ERROR);
     }
+  }
+  async refreshToken(user: JwtPayload, ip: string): Promise<ApiResponse<LoginResponse>> {
+    const refresh_token = await this.generateRefreshToken(
+      { ...user, _id: user.user_id },
+      user.session_id,
+    );
+    await this.userSessionRepository.updateTokenInSession(
+      user.session_id.toString(),
+      refresh_token,
+      ip,
+    );
+    const access_token = await this.generateAccessToken(
+      { ...user, _id: user.user_id },
+      user.session_id.toString(),
+    );
+    return new ApiResponse<LoginResponse>({ access_token, refresh_token });
   }
 }
