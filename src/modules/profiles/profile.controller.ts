@@ -11,6 +11,8 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/passport/jwt-auth.guard';
@@ -32,6 +34,7 @@ import { UpdateProfileRequest } from './dto/request/UpdateProfileRequest.dto';
 import { ProfileResponse } from './dto/response/ProfileResponse.dto';
 import { UserSessionService } from '../users-sessions/user-session.service';
 import { CloudinaryService } from '../../common/cloudinary/cloudinary.service';
+import { ErrorCode, ErrorDetails } from '../../common/exceptions/error-code.enum';
 
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
@@ -86,6 +89,43 @@ export class ProfileController {
     @Body() updateProfileRequest: UpdateProfileRequest,
   ): Promise<ApiResponseWrapper<ProfileResponse> | void> {
     const user = req.user as JwtPayload;
+
+    // Validate name
+    if (updateProfileRequest.full_name) {
+      // Check if name is blank
+      if (!updateProfileRequest.full_name.trim()) {
+        throw new BadRequestException({
+          statusCode: ErrorDetails[ErrorCode.NAME_IS_BLANK].httpStatus,
+          message: ErrorDetails[ErrorCode.NAME_IS_BLANK].message,
+          code: ErrorDetails[ErrorCode.NAME_IS_BLANK].code
+        });
+      }
+      // Check if name contains numbers
+      if (/\d/.test(updateProfileRequest.full_name)) {
+        throw new BadRequestException({
+          statusCode: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].httpStatus,
+          message: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].message,
+          code: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].code
+        });
+      }
+      // Check if name contains special characters
+      if (/[!@#$%^&*(),.?":{}|<>]/.test(updateProfileRequest.full_name)) {
+        throw new BadRequestException({
+          statusCode: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].httpStatus,
+          message: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].message,
+          code: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].code
+        });
+      }
+
+      // Check if name is too long (e.g., more than 50 characters)
+      if (updateProfileRequest.full_name.length > 25) {
+        throw new BadRequestException({
+          statusCode: ErrorDetails[ErrorCode.NAME_TOO_LONG].httpStatus,
+          message: ErrorDetails[ErrorCode.NAME_TOO_LONG].message,
+          code: ErrorDetails[ErrorCode.NAME_TOO_LONG].code
+        });
+      }
+    }
 
     const profile = await this.userService.updateProfile(user.user_id, updateProfileRequest);
 
@@ -193,11 +233,34 @@ export class ProfileController {
   ) {
     const user = req.user as JwtPayload;
     
+    // Check if file is selected
+    if (!file) {
+      throw new BadRequestException({
+        statusCode: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].httpStatus,
+        message: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].message,
+        code: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].code
+      });
+    }
+
+    // Check file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException({
+        statusCode: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].httpStatus,
+        message: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].message,
+        code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code
+      });
+    }
+    
     const avatarUrl = await this.cloudinaryService.uploadFile(file);
     const updatedUser = await this.userService.updateAvatar(user.user_id, avatarUrl);
 
     if (!updatedUser) {
-      throw new Error('Failed to update avatar');
+      throw new BadRequestException({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Failed to update avatar',
+        code: 1029
+      });
     }
 
     return {

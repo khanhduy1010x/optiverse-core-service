@@ -8,6 +8,5 @@ export class ChangePasswordRequest {
 
   @ApiProperty({ example: 'NewSecurePassword456!', description: 'New password (must be secure)' })
   @IsString()
-  @MinLength(8)
   newPassword: string;
 }
