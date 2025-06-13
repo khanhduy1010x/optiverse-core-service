@@ -23,6 +23,18 @@ export enum ErrorCode {
   INVALID_TOKEN_GOOGLE,
   ACCOUNT_IS_LOGOUT,
   MISSING_ACCESS_TOKEN,
+  NAME_TOO_SHORT,
+  NAME_CONTAINS_NUMBERS,
+  NAME_CONTAINS_SPECIAL_CHARS,
+  NAME_TOO_LONG,
+  NAME_IS_BLANK,
+  AVATAR_INVALID_FILE_TYPE,
+  AVATAR_NO_FILE_SELECTED,
+  PASSWORD_SAME_AS_OLD,
+  NEW_PASSWORD_EMPTY,
+  OLD_PASSWORD_EMPTY,
+  OLD_PASSWORD_INCORRECT,
+  PASSWORD_FORMAT_INVALID
 }
 export const ErrorDetails = {
   [ErrorCode.INVALID_CODE]: {
@@ -136,4 +148,64 @@ export const ErrorDetails = {
     message: 'Missing access token',
     httpStatus: HttpStatus.BAD_REQUEST,
   },
+  [ErrorCode.NAME_TOO_SHORT]: {
+    code: 1021,
+    message: 'Name must be 2 words',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NAME_CONTAINS_NUMBERS]: {
+    code: 1022,
+    message: 'Name cannot contain numbers',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NAME_CONTAINS_SPECIAL_CHARS]: {
+    code: 1023,
+    message: 'Name cannot contain special characters',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NAME_TOO_LONG]: {
+    code: 1024,
+    message: 'Name is too long',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NAME_IS_BLANK]: {
+    code: 1025,
+    message: 'Name cannot be blank',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.AVATAR_INVALID_FILE_TYPE]: {
+    code: 1026,
+    message: 'File format is incorrect',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.AVATAR_NO_FILE_SELECTED]: {
+    code: 1027,
+    message: 'Please select a photo to update',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.PASSWORD_SAME_AS_OLD]: {
+    code: 1030,
+    message: 'The new password cannot be the same as the old one',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.NEW_PASSWORD_EMPTY]: {
+    code: 1031,
+    message: 'Please enter a new password',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.OLD_PASSWORD_EMPTY]: {
+    code: 1032,
+    message: 'Please enter your current password',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.OLD_PASSWORD_INCORRECT]: {
+    code: 1033,
+    message: 'The current password is incorrect',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.PASSWORD_FORMAT_INVALID]: {
+    code: 1034,
+    message: 'The password format is invalid',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  }
 };
