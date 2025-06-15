@@ -17,7 +17,10 @@ export class User {
   @Prop()
   full_name?: string;
 
-  @Prop()
+  @Prop({
+    default:
+      'https://cdn.vectorstock.com/i/500p/44/01/default-avatar-photo-placeholder-icon-grey-vector-38594401.jpg',
+  })
   avatar_url?: string;
 
   @Prop({ default: false })
