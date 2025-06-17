@@ -34,7 +34,7 @@ export enum ErrorCode {
   NEW_PASSWORD_EMPTY,
   OLD_PASSWORD_EMPTY,
   OLD_PASSWORD_INCORRECT,
-  PASSWORD_FORMAT_INVALID
+  PASSWORD_FORMAT_INVALID,
 }
 export const ErrorDetails = {
   [ErrorCode.INVALID_CODE]: {
@@ -141,7 +141,7 @@ export const ErrorDetails = {
   [ErrorCode.ACCOUNT_IS_LOGOUT]: {
     code: 1019,
     message: 'Account is log out',
-    httpStatus: HttpStatus.BAD_REQUEST,
+    httpStatus: HttpStatus.UNAUTHORIZED,
   },
   [ErrorCode.MISSING_ACCESS_TOKEN]: {
     code: 1020,
@@ -207,5 +207,5 @@ export const ErrorDetails = {
     code: 1034,
     message: 'The password format is invalid',
     httpStatus: HttpStatus.BAD_REQUEST,
-  }
+  },
 };
