@@ -33,19 +33,16 @@ export class AuthService {
     private hashPasswordService: HashPasswordService,
     private otpVerificationService: OtpVerificationService,
     private usersService: UserService,
-
-
-
-  ) { }
+  ) {}
 
   async login(
     user: any,
     ip: string,
     token: string = '',
     isLoginGoogle: boolean = false,
-    is_web: boolean = false
+    is_web: boolean = false,
   ): Promise<ApiResponse<LoginResponse> | void> {
-    const userGoogle = isLoginGoogle ? await this.validateGoogleUser(user, token,is_web) : null;
+    const userGoogle = isLoginGoogle ? await this.validateGoogleUser(user, token, is_web) : null;
     const userData = userGoogle ?? user;
     if (!userData) {
       throw new AppException(ErrorCode.NOT_FOUND);
@@ -72,7 +69,9 @@ export class AuthService {
         params: {
           client_id: this.configService.get<string>('GOOGLE_CLIENT_ID'),
           client_secret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
-          redirect_uri: is_web ?  this.configService.get<string>('GOOGLE_CALLBACK_URL_WEB') : this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+          redirect_uri: is_web
+            ? this.configService.get<string>('GOOGLE_CALLBACK_URL_WEB')
+            : this.configService.get<string>('GOOGLE_CALLBACK_URL'),
           grant_type: 'authorization_code',
           code,
         },
@@ -144,7 +143,6 @@ export class AuthService {
     if (!isTruePassword) return null;
     return user;
   }
-
 
   async createAccount(request: CreateAccountRequest): Promise<ApiResponse<CreateAccountResponse>> {
     try {
@@ -255,12 +253,12 @@ export class AuthService {
   async getUsersByIds(userIds: string[]): Promise<ApiResponse<UserResponse[]>> {
     try {
       const users = await this.userRepository.findUsersByIds(userIds);
-      
+
       if (!users || users.length === 0) {
         return new ApiResponse<UserResponse[]>([]);
       }
-      
-      const userResponses = users.map(user => {
+
+      const userResponses = users.map((user) => {
         return {
           user_id: user._id.toString(),
           email: user.email,
@@ -268,7 +266,7 @@ export class AuthService {
           avatar_url: user.avatar_url || '',
         } as UserResponse;
       });
-      
+
       return new ApiResponse<UserResponse[]>(userResponses);
     } catch (error) {
       throw new AppException(ErrorCode.SERVER_ERROR);

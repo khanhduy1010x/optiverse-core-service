@@ -39,24 +39,24 @@ import { ErrorCode } from 'src/common/exceptions/error-code.enum';
 @ApiExtraModels(ApiResponseWrapper, LoginResponse, CreateAccountResponse, ResetPasswordResponse)
 @Controller('/auth')
 export class AuthController {
-  
-  constructor(private authService: AuthService,
+  constructor(
+    private authService: AuthService,
     private readonly userService: UserService,
   ) {}
 
-   @Get('verify')
+  @Get('verify')
   @UseGuards(JwtAuthGuard) // Sử dụng JwtAuthGuard
   @ApiOperation({ summary: 'Verify JWT and return user info' })
   @ApiOkResponse({ description: 'JWT is valid' })
   @ApiResponse({ status: 401, description: 'Invalid or missing token' })
-  async verifyToken(@Request() req, @Response() res){
-    const payload = req.user as JwtPayload; 
+  async verifyToken(@Request() req, @Response() res) {
+    const payload = req.user as JwtPayload;
     const user = await this.userService.findOne(payload.email);
     console.log(payload);
     if (!user) {
       throw new AppException(ErrorCode.NOT_FOUND);
     }
-    const userInfoBase64 = Buffer.from(JSON.stringify(user)).toString('base64')
+    const userInfoBase64 = Buffer.from(JSON.stringify(user)).toString('base64');
     res.setHeader('X-User-Info', userInfoBase64);
     return res.status(200).json({});
   }
@@ -108,7 +108,7 @@ export class AuthController {
     return this.authService.login(req.user, ip, '', false);
   }
 
-@ApiOperation({ summary: 'Register new account' })
+  @ApiOperation({ summary: 'Register new account' })
   @ApiBody({ type: CreateAccountRequest })
   @ApiCreatedResponse({
     description: 'User registered successfully',
@@ -162,7 +162,6 @@ export class AuthController {
   ): Promise<ApiResponseWrapper<CreateAccountResponse | ResetPasswordResponse>> {
     return this.authService.verifyAccount(request);
   }
-
 
   @ApiOperation({ summary: 'Resend OTP' })
   @ApiBody({ type: SendOtpRequest })
@@ -236,7 +235,7 @@ export class AuthController {
       request.newPassword,
     );
   }
-  
+
   @ApiOperation({ summary: 'Logout from a single session' })
   @ApiBody({ type: LogOutSingleReques })
   @ApiOkResponse({
@@ -284,7 +283,7 @@ export class AuthController {
     return await this.authService.logOutMutil(user);
   }
 
-    @ApiOperation({ summary: 'Send OTP for password reset' })
+  @ApiOperation({ summary: 'Send OTP for password reset' })
   @ApiBody({ type: SendOtpRequest })
   @ApiOkResponse({
     description: 'OTP sent for password reset',
@@ -331,7 +330,6 @@ export class AuthController {
     const user = req.user as JwtPayload;
     return await this.authService.resetNewPassword(user, request.newPassword);
   }
-  
 
   @Public()
   @Get('get-info-by-email/:email')
@@ -340,19 +338,19 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Get users by array of IDs' })
-  @ApiBody({ 
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {
         userIds: {
           type: 'array',
           items: {
-            type: 'string'
+            type: 'string',
           },
-          description: 'Array of user IDs'
-        }
-      }
-    }
+          description: 'Array of user IDs',
+        },
+      },
+    },
   })
   @ApiOkResponse({
     description: 'Users retrieved successfully',
@@ -364,7 +362,7 @@ export class AuthController {
           properties: {
             data: {
               type: 'array',
-              items: { $ref: getSchemaPath(UserResponse) }
+              items: { $ref: getSchemaPath(UserResponse) },
             },
           },
         },
@@ -402,9 +400,9 @@ export class AuthController {
     @Body() request: LoginGoogleRequest,
   ): Promise<ApiResponseWrapper<LoginResponse> | void> {
     const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
-    return this.authService.login(null, ip, request.token, true,request.is_web);
+    return this.authService.login(null, ip, request.token, true, request.is_web);
   }
-    @ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({ summary: 'Refresh access token' })
   @ApiOkResponse({
     description: 'Access token refreshed successfully',
     schema: {
@@ -426,5 +424,18 @@ export class AuthController {
     const user = req.user as JwtPayload;
     const ip = req.ip?.startsWith('::ffff:') ? req.ip.substring(7) : req.ip;
     return await this.authService.refreshToken(user, ip);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMyInfo(@Request() req): Promise<ApiResponseWrapper<UserResponse>> {
+    const user = req.user as JwtPayload;
+    const userInfo = await this.userService.findOne(user.email);
+    if (!userInfo) throw new AppException(ErrorCode.NOT_FOUND);
+    return new ApiResponseWrapper<UserResponse>({
+      user_id: userInfo._id.toString(),
+      email: userInfo.email,
+      full_name: userInfo.full_name,
+      avatar_url: userInfo.avatar_url,
+    });
   }
 }
