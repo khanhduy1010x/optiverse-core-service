@@ -24,6 +24,11 @@ async function bootstrap() {
       stopAtFirstError: true,
     }),
   );
+  app.enableCors({
+    origin: '*',
+    exposedHeaders: ['X-User-Info'],
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Opt-Verse Server API')
     .setDescription('Welcom to OTP-VERSE')
