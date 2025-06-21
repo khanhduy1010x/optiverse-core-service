@@ -97,7 +97,7 @@ export class ProfileController {
         throw new BadRequestException({
           statusCode: ErrorDetails[ErrorCode.NAME_IS_BLANK].httpStatus,
           message: ErrorDetails[ErrorCode.NAME_IS_BLANK].message,
-          code: ErrorDetails[ErrorCode.NAME_IS_BLANK].code
+          code: ErrorDetails[ErrorCode.NAME_IS_BLANK].code,
         });
       }
       // Check if name contains numbers
@@ -105,7 +105,7 @@ export class ProfileController {
         throw new BadRequestException({
           statusCode: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].httpStatus,
           message: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].message,
-          code: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].code
+          code: ErrorDetails[ErrorCode.NAME_CONTAINS_NUMBERS].code,
         });
       }
       // Check if name contains special characters
@@ -113,7 +113,7 @@ export class ProfileController {
         throw new BadRequestException({
           statusCode: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].httpStatus,
           message: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].message,
-          code: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].code
+          code: ErrorDetails[ErrorCode.NAME_CONTAINS_SPECIAL_CHARS].code,
         });
       }
 
@@ -122,7 +122,7 @@ export class ProfileController {
         throw new BadRequestException({
           statusCode: ErrorDetails[ErrorCode.NAME_TOO_LONG].httpStatus,
           message: ErrorDetails[ErrorCode.NAME_TOO_LONG].message,
-          code: ErrorDetails[ErrorCode.NAME_TOO_LONG].code
+          code: ErrorDetails[ErrorCode.NAME_TOO_LONG].code,
         });
       }
     }
@@ -207,7 +207,9 @@ export class ProfileController {
   async getEmptyTokenSessions(@Request() req) {
     const user = req.user as JwtPayload;
     const sessions = await this.userSessionService.getAllUserSessions(user.user_id);
-    const emptyTokenSessions = sessions.filter(session => !session.refresh_token || session.refresh_token === '');
+    const emptyTokenSessions = sessions.filter(
+      (session) => !session.refresh_token || session.refresh_token === '',
+    );
     return new ApiResponseWrapper(emptyTokenSessions);
   }
 
@@ -227,18 +229,15 @@ export class ProfileController {
   @UseGuards(JwtAuthGuard)
   @Post('avatar')
   @UseInterceptors(FileInterceptor('file'))
-  async updateAvatar(
-    @Request() req,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  async updateAvatar(@Request() req, @UploadedFile() file: Express.Multer.File) {
     const user = req.user as JwtPayload;
-    
+
     // Check if file is selected
     if (!file) {
       throw new BadRequestException({
         statusCode: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].httpStatus,
         message: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].message,
-        code: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].code
+        code: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].code,
       });
     }
 
@@ -248,10 +247,10 @@ export class ProfileController {
       throw new BadRequestException({
         statusCode: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].httpStatus,
         message: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].message,
-        code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code
+        code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code,
       });
     }
-    
+
     const avatarUrl = await this.cloudinaryService.uploadFile(file);
     const updatedUser = await this.userService.updateAvatar(user.user_id, avatarUrl);
 
@@ -259,7 +258,7 @@ export class ProfileController {
       throw new BadRequestException({
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Failed to update avatar',
-        code: 1029
+        code: 1029,
       });
     }
 
@@ -267,8 +266,40 @@ export class ProfileController {
       statusCode: 200,
       message: 'Avatar updated successfully',
       data: {
-        avatar: avatarUrl
-      }
+        avatar: avatarUrl,
+      },
     };
+  }
+  @UseGuards(JwtAuthGuard)
+  @Post('/chat/theme')
+  @UseInterceptors(FileInterceptor('file'))
+  async addThemeChat(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<ApiResponseWrapper<String>> {
+    const user = req.user as JwtPayload;
+
+    // Check if file is selected
+    if (!file) {
+      throw new BadRequestException({
+        statusCode: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].httpStatus,
+        message: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].message,
+        code: ErrorDetails[ErrorCode.AVATAR_NO_FILE_SELECTED].code,
+      });
+    }
+
+    // Check file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException({
+        statusCode: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].httpStatus,
+        message: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].message,
+        code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code,
+      });
+    }
+
+    const theme = await this.cloudinaryService.uploadFile(file, 'themes-chat');
+    console.log(theme);
+    return new ApiResponseWrapper<String>(theme);
   }
 }
