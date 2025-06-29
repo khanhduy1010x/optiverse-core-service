@@ -27,11 +27,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(request: Request, payload: any): Promise<JwtPayload> {
-    const isSessionRequired = !['/auth/reset-password'].includes(request.url);
-    if (isSessionRequired) {
-      const isValidSession = await this.userSessionRespository.validateIsActive(payload.session_id);
-      if (!isValidSession) throw new AppException(ErrorCode.ACCOUNT_IS_LOGOUT);
+    try {
+      const isSessionRequired = !['/auth/reset-password'].includes(request.url);
+      if (isSessionRequired) {
+        const isValidSession = await this.userSessionRespository.validateIsActive(
+          payload.session_id,
+        );
+        if (!isValidSession) {
+          // Add error information to request object
+          (request as any).authError = {
+            type: 'session_expired',
+            code: ErrorCode.ACCOUNT_IS_LOGOUT,
+          };
+          throw new AppException(ErrorCode.ACCOUNT_IS_LOGOUT);
+        }
+      }
+      return new JwtPayload(payload.sub, payload.email, payload.full_name, payload.session_id);
+    } catch (error) {
+      // Add error information to request object
+      (request as any).authError = {
+        type: error instanceof AppException ? ErrorCode.ACCOUNT_IS_LOGOUT : 'token_error',
+        message: error.message,
+      };
+      throw error;
     }
-    return new JwtPayload(payload.sub, payload.email, payload.full_name, payload.session_id);
   }
 }
