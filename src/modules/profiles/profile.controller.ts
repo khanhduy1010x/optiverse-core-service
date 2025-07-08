@@ -288,15 +288,15 @@ export class ProfileController {
       });
     }
 
-    // Check file type
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException({
-        statusCode: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].httpStatus,
-        message: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].message,
-        code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code,
-      });
-    }
+    // // Check file type
+    // const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    // if (!allowedMimeTypes.includes(file.mimetype)) {
+    //   throw new BadRequestException({
+    //     statusCode: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].httpStatus,
+    //     message: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].message,
+    //     code: ErrorDetails[ErrorCode.AVATAR_INVALID_FILE_TYPE].code,
+    //   });
+    // }
 
     const theme = await this.cloudinaryService.uploadFile(file, 'themes-chat');
     console.log(theme);
