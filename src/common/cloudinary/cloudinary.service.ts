@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
+import sharp from 'sharp';
 
 @Injectable()
 export class CloudinaryService {
@@ -12,6 +13,11 @@ export class CloudinaryService {
   }
 
   async uploadFile(file: Express.Multer.File, folder: string = 'avatars'): Promise<string> {
+    const resizedBuffer = await sharp(file.buffer)
+      .resize(512, 512)
+      .jpeg({ quality: 60 })
+      .toBuffer();
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -24,7 +30,7 @@ export class CloudinaryService {
         },
       );
 
-      uploadStream.end(file.buffer);
+      uploadStream.end(resizedBuffer);
     });
   }
-} 
+}
