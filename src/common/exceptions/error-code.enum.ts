@@ -35,6 +35,12 @@ export enum ErrorCode {
   OLD_PASSWORD_EMPTY,
   OLD_PASSWORD_INCORRECT,
   PASSWORD_FORMAT_INVALID,
+  USER_NOT_FOUND,
+  USER_ALREADY_SUSPENDED,
+  USER_ALREADY_ACTIVE,
+  ADMIN_REQUIRED,
+  USER_IS_BANNED,
+  USER_ALREADY_HAS_ROLE,
 }
 export const ErrorDetails = {
   [ErrorCode.INVALID_CODE]: {
@@ -206,6 +212,36 @@ export const ErrorDetails = {
   [ErrorCode.PASSWORD_FORMAT_INVALID]: {
     code: 1034,
     message: 'The password format is invalid',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.USER_NOT_FOUND]: {
+    code: 1035,
+    message: 'User not found',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.USER_ALREADY_SUSPENDED]: {
+    code: 1036,
+    message: 'User is already suspended',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.USER_ALREADY_ACTIVE]: {
+    code: 1037,
+    message: 'User is already active',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.ADMIN_REQUIRED]: {
+    code: 1038,
+    message: 'Admin permission required',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.USER_IS_BANNED]: {
+    code: 1040,
+    message: 'User is banned',
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.USER_ALREADY_HAS_ROLE]: {
+    code: 1041,
+    message: 'User already has this role',
     httpStatus: HttpStatus.BAD_REQUEST,
   },
 };

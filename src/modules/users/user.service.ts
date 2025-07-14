@@ -1,11 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { User } from './user.schema';
+import { User, UserStatus, UserRole } from './user.schema';
 import { UserRepository } from './user.repository';
 import { UpdateProfileRequest } from '../profiles/dto/request/UpdateProfileRequest.dto';
+import { AppException } from '../../common/exceptions/app.exception';
+import { ErrorCode } from '../../common/exceptions/error-code.enum';
 
 @Injectable()
 export class UserService {
   constructor(private userRepository: UserRepository) {}
+
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.findAll();
+  }
+
+  async findPaginated(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    role?: string,
+    status?: string,
+  ): Promise<{ users: User[]; total: number; totalPages: number }> {
+    return await this.userRepository.findPaginated(page, limit, search, role, status);
+  }
+
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+    return user;
+  }
 
   async findOne(username: string): Promise<User | null> {
     return await this.userRepository.findOne(username);
@@ -25,5 +49,56 @@ export class UserService {
 
   async updateAvatar(userId: string, avatarUrl: string): Promise<User | null> {
     return await this.userRepository.updateAvatar(userId, avatarUrl);
+  }
+
+  async suspendUser(userId: string): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AppException(ErrorCode.USER_ALREADY_SUSPENDED);
+    }
+
+    const updatedUser = await this.userRepository.suspendUser(userId);
+    if (!updatedUser) {
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+    return updatedUser;
+  }
+
+  async activateUser(userId: string): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new AppException(ErrorCode.USER_ALREADY_ACTIVE);
+    }
+
+    const updatedUser = await this.userRepository.activateUser(userId);
+    if (!updatedUser) {
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+    return updatedUser;
+  }
+
+  async changeUserRole(userId: string, newRole: UserRole): Promise<User> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (user.role === newRole) {
+      throw new AppException(ErrorCode.USER_ALREADY_HAS_ROLE);
+    }
+
+    const updatedUser = await this.userRepository.changeUserRole(userId, newRole);
+    if (!updatedUser) {
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+    return updatedUser;
   }
 }

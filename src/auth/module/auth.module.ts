@@ -13,6 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { HashPasswordService } from '../service/hash-password.service';
 import { OtpVerificationModule } from 'src/modules/otp-verifications/otp-verifications.module';
 import { GoogleStrategy } from '../passport/google.strategy';
+import { RolesGuard } from '../passport/roles.guard';
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { GoogleStrategy } from '../passport/google.strategy';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
   controllers: [AuthController],

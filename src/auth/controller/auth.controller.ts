@@ -30,7 +30,7 @@ import { CreateAccountResponse } from '../dto/response/CreateAccountResponse.dto
 import { ResetPasswordResponse } from '../dto/response/ResetPasswordResponse.dto';
 import { AppException } from 'src/common/exceptions/app.exception';
 import { UserService } from 'src/modules/users/user.service';
-import { User } from 'src/modules/users/user.schema';
+import { User, UserRole } from 'src/modules/users/user.schema';
 import { UserResponse } from '../dto/response/UserResponse.dto';
 import { ErrorCode } from 'src/common/exceptions/error-code.enum';
 
@@ -45,19 +45,29 @@ export class AuthController {
   ) {}
 
   @Get('verify')
-  @UseGuards(JwtAuthGuard) // Sử dụng JwtAuthGuard
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Verify JWT and return user info' })
   @ApiOkResponse({ description: 'JWT is valid' })
   @ApiResponse({ status: 401, description: 'Invalid or missing token' })
   async verifyToken(@Request() req, @Response() res) {
     const payload = req.user as JwtPayload;
     const user = await this.userService.findOne(payload.email);
-    console.log(payload);
     if (!user) {
       throw new AppException(ErrorCode.NOT_FOUND);
     }
+    if (user.status === 'suspended') {
+      res.setHeader('X-User-Banned', 'true');
+      return res.status(403).json({ code: 'USER_IS_BANNED', message: 'User is banned' });
+    }
+    let redirectUrl: string | null = null;
+    if (user.role === UserRole.ADMIN) {
+      redirectUrl = '/admin/dashboard';
+    }
     const userInfoBase64 = Buffer.from(JSON.stringify(user)).toString('base64');
     res.setHeader('X-User-Info', userInfoBase64);
+    if (redirectUrl) {
+      res.setHeader('X-Redirect-Url', redirectUrl);
+    }
     return res.status(200).json({});
   }
 
