@@ -4,6 +4,16 @@ import mongoose from 'mongoose';
 
 export type UserDocument = User & Document;
 
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
+export enum UserStatus {
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+}
+
 @Schema({ timestamps: true })
 export class User {
   _id: mongoose.Types.ObjectId;
@@ -25,6 +35,12 @@ export class User {
 
   @Prop({ default: false })
   isVerified: boolean;
+
+  @Prop({ type: String, enum: UserRole, default: UserRole.USER })
+  role: UserRole;
+
+  @Prop({ type: String, enum: UserStatus, default: UserStatus.ACTIVE })
+  status: UserStatus;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

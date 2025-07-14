@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { UserRole } from '../../modules/users/user.schema';
 
 export class JwtPayload {
   @ApiProperty({
@@ -25,10 +26,24 @@ export class JwtPayload {
   })
   session_id: string;
 
-  constructor(user_id: string, email: string, full_name: string, session_id: string) {
+  @ApiProperty({
+    example: 'user',
+    description: 'Role of the user',
+    enum: UserRole,
+  })
+  role: UserRole;
+
+  constructor(
+    user_id: string,
+    email: string,
+    full_name: string,
+    session_id: string,
+    role: UserRole = UserRole.USER,
+  ) {
     this.user_id = user_id;
     this.email = email;
     this.full_name = full_name;
     this.session_id = session_id;
+    this.role = role;
   }
 }

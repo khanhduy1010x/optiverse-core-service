@@ -119,6 +119,7 @@ export class AuthService {
       email: user.email,
       full_name: user.full_name,
       session_id: userSession_id,
+      role: user.role,
     };
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
@@ -132,6 +133,7 @@ export class AuthService {
       email: user.email,
       full_name: user.full_name,
       session_id: userSession_id,
+      role: user.role,
     };
     return this.jwtService.sign(payload);
   }
@@ -209,7 +211,12 @@ export class AuthService {
   }
 
   async generateResetToken(user: any): Promise<string> {
-    const payload = { sub: user._id, email: user.email, full_name: user.full_name };
+    const payload = {
+      sub: user._id,
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+    };
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: this.configService.get<string>('JWT_RESET_PASSWORD_TOKEN_EXPIRED'),
