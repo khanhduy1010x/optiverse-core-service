@@ -42,7 +42,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   @Get('verify')
   @UseGuards(JwtAuthGuard)
@@ -218,7 +218,29 @@ export class AuthController {
     @Body() request: ChangePasswordRequest,
   ): Promise<ApiResponseWrapper<null>> {
     const user = req.user as JwtPayload;
+    const currentUser = await this.userService.findOneByEmail(user.email);
+    if (!currentUser?.password_hash) {
+      // Check if new password is empty
+      if (!request.newPassword?.trim()) {
+        throw new AppException(ErrorCode.NEW_PASSWORD_EMPTY);
+      }
 
+      // Check if new password is same as old password
+      if (request.currentPassword === request.newPassword) {
+        throw new AppException(ErrorCode.PASSWORD_SAME_AS_OLD);
+      }
+
+      // Check password format (at least 8 characters)
+      if (request.newPassword.length < 8) {
+        throw new AppException(ErrorCode.PASSWORD_FORMAT_INVALID);
+      }
+
+      return await this.authService.changePassword(
+        user,
+        '',
+        request.newPassword,
+      );
+    }
     // Check if old password is empty
     if (!request.currentPassword?.trim()) {
       throw new AppException(ErrorCode.OLD_PASSWORD_EMPTY);
