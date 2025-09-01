@@ -229,12 +229,14 @@ export class AuthService {
     newPassword: string,
   ): Promise<ApiResponse<null>> {
     const currentUser = await this.usersService.findOne(user.email);
-    if (!currentUser || !currentUser.password_hash) throw new AppException(ErrorCode.NOT_FOUND);
-    const isEqual = await this.hashPasswordService.comparePassword(
-      currentPassword,
-      currentUser?.password_hash,
-    );
-    if (!isEqual) throw new AppException(ErrorCode.CURRENT_PASSWORD_NOT_MATCH);
+    if(currentPassword !== ''){
+      if (!currentUser || !currentUser.password_hash) throw new AppException(ErrorCode.NOT_FOUND);
+      const isEqual = await this.hashPasswordService.comparePassword(
+        currentPassword,
+        currentUser?.password_hash,
+      );
+      if (!isEqual) throw new AppException(ErrorCode.CURRENT_PASSWORD_NOT_MATCH);
+    }
     const newPasswordHash = await this.hashPasswordService.hashPassword(newPassword);
     this.userRepository.updatePassword(user.email, newPasswordHash);
     return new ApiResponse();

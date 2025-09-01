@@ -60,11 +60,12 @@ export class UserRepository {
     return await this.userModel.findById(id).lean();
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<any | null> {
     const user = await this.userModel.findOne({ email }).lean(); // dùng .lean() để trả về plain object
     if (user) {
+      const has_password = user.password_hash ? true : false;
       const { password_hash, ...rest } = user;
-      return rest;
+      return { ...rest, has_password };
     }
     return user;
   }
