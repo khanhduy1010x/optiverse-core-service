@@ -121,4 +121,7 @@ export class UserRepository {
   async changeUserRole(userId: string, role: UserRole): Promise<User | null> {
     return await this.userModel.findByIdAndUpdate(userId, { role }, { new: true }).lean();
   }
+async removeAccount(userId: string): Promise<void> {
+  await this.userModel.deleteOne({ _id: userId });
+}
 }

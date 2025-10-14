@@ -17,6 +17,7 @@ export class OtpVerificationService {
   }
 
   async sendOtp(email: string, otpType: OtpType, isResend: boolean = false) {
+    await this.otpVerificationRepository
     const otp = await this.generateOtp();
     if (isResend) {
       await this.handleResendOtp(email, otp, otpType);
@@ -53,7 +54,6 @@ export class OtpVerificationService {
 
   private async sendOtpEmail(email: string, otp: string, otpType: OtpType) {
     const subject = otpType === OtpType.FORGOT_PASSWORD ? 'Đặt Lại Mật Khẩu' : 'Xác Minh OTP';
-
     await this.mailerService.sendMail({
       to: email,
       subject,

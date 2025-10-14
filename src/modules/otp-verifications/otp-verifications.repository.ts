@@ -28,4 +28,8 @@ export class OtpVerificationRepository {
   ): Promise<OtpVerification | null> {
     return await this.otpVerification.findOne({ email, otpType: otp });
   }
+
+  async removeOldOTP(email:string): Promise<void> {
+    await this.otpVerification.findOneAndDelete({email: email});
+  }
 }

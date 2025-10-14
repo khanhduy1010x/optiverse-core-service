@@ -149,11 +149,12 @@ export class AuthService {
   async createAccount(request: CreateAccountRequest): Promise<ApiResponse<CreateAccountResponse>> {
     try {
       const user = await this.userRepository.findByEmail(request.email);
-      if (user) {
-        if (user.isVerified) {
+      if (user ) {
+        if( user.isVerified) {
           throw new AppException(ErrorCode.EMAIL_EXISTS);
-        } else {
-          throw new AppException(ErrorCode.EMAIL_EXISTS_NOT_VERIFY);
+
+        }else {
+          await this.userRepository.removeAccount(user._id);
         }
       }
       const hashedPassword = await this.hashPasswordService.hashPassword(request.password);
@@ -175,12 +176,17 @@ export class AuthService {
       if (error instanceof AppException) {
         throw error;
       }
+      console.log(error)
       throw new AppException(ErrorCode.SERVER_ERROR);
     }
   }
 
   async sendOtp(request: SendOtpRequest): Promise<ApiResponse<null>> {
     const otpType = request.isVerify ? OtpType.EMAIL_VERIFICATION : OtpType.FORGOT_PASSWORD;
+    const account = await this.usersService.findOneByEmail(request.email);
+    if(!account) {
+      throw new AppException(ErrorCode.NOT_FOUND)
+    }
     await this.otpVerificationService.sendOtp(request.email, otpType, true);
     return new ApiResponse();
   }
