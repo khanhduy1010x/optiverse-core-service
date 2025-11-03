@@ -14,6 +14,7 @@ import { HashPasswordService } from '../service/hash-password.service';
 import { OtpVerificationModule } from 'src/modules/otp-verifications/otp-verifications.module';
 import { GoogleStrategy } from '../passport/google.strategy';
 import { RolesGuard } from '../passport/roles.guard';
+import { UserMembershipModule } from 'src/modules/user-memberships/user-membership.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { RolesGuard } from '../passport/roles.guard';
     UsersModule,
     PassportModule,
     UserSessionModule,
+    UserMembershipModule,
     ConfigModule.forRoot(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
