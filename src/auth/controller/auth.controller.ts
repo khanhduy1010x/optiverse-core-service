@@ -33,6 +33,7 @@ import { UserService } from 'src/modules/users/user.service';
 import { User, UserRole } from 'src/modules/users/user.schema';
 import { UserResponse } from '../dto/response/UserResponse.dto';
 import { ErrorCode } from 'src/common/exceptions/error-code.enum';
+import { UserMembershipService } from 'src/modules/user-memberships/user-membership.service';
 
 @ApiTags('Auth')
 @ApiBearerAuth('access-token')
@@ -42,6 +43,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private readonly userService: UserService,
+    private readonly userMembershipService: UserMembershipService,
   ) { }
 
   @Get('verify')
@@ -59,11 +61,28 @@ export class AuthController {
       res.setHeader('X-User-Banned', 'true');
       return res.status(403).json({ code: 'USER_IS_BANNED', message: 'User is banned' });
     }
+
+    // Check user membership
+    console.log('Checking user membership for user:', user._id.toString());
+    const activeMembership = await this.userMembershipService.getActiveMembership(user._id.toString());
+    const membershipLevel = await this.userMembershipService.getUserMembershipLevel(user._id.toString());
+    
+    // Create enhanced user object with membership info
+    const userWithMembership = {
+      ...JSON.parse(JSON.stringify(user)),
+      membership: {
+        level: membershipLevel,
+        hasActiveMembership: !!activeMembership,
+        packageName: activeMembership?.package_id ? (activeMembership.package_id as any).name : 'Free',
+        endDate: activeMembership?.end_date || null,
+      }
+    };
+
     let redirectUrl: string | null = null;
     if (user.role === UserRole.ADMIN) {
       redirectUrl = '/admin/dashboard';
     }
-    const userInfoBase64 = Buffer.from(JSON.stringify(user)).toString('base64');
+    const userInfoBase64 = Buffer.from(JSON.stringify(userWithMembership)).toString('base64');
     res.setHeader('X-User-Info', userInfoBase64);
     if (redirectUrl) {
       res.setHeader('X-Redirect-Url', redirectUrl);

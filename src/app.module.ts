@@ -11,6 +11,7 @@ import { OtpVerificationModule } from './modules/otp-verifications/otp-verificat
 import { ProfilesModule } from './modules/profiles/profile.module';
 import { LoggerMiddleware } from './common/logger/logger.middleware';
 import { UsersModule } from './modules/users/user.module';
+import { MembershipPackageModule } from './modules/membership-packages/membership-package.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UsersModule } from './modules/users/user.module';
     AuthModule,
     ProfilesModule,
     OtpVerificationModule,
+    MembershipPackageModule
   ],
   controllers: [AppController],
   providers: [

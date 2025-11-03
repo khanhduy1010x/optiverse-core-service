@@ -41,6 +41,10 @@ export enum ErrorCode {
   ADMIN_REQUIRED,
   USER_IS_BANNED,
   USER_ALREADY_HAS_ROLE,
+  INVALID_REQUEST,
+  MEMBERSHIP_PACKAGE_EXISTS,
+  MEMBERSHIP_PACKAGE_NOT_FOUND,
+  INTERNAL_SERVER_ERROR,
 }
 export const ErrorDetails = {
   [ErrorCode.INVALID_CODE]: {
@@ -243,5 +247,25 @@ export const ErrorDetails = {
     code: 1041,
     message: 'User already has this role',
     httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.INVALID_REQUEST]: {
+    code: 1042,
+    message: 'Invalid request',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.MEMBERSHIP_PACKAGE_EXISTS]: {
+    code: 1043,
+    message: 'Membership package with this level already exists',
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.MEMBERSHIP_PACKAGE_NOT_FOUND]: {
+    code: 1044,
+    message: 'Membership package not found',
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.INTERNAL_SERVER_ERROR]: {
+    code: 1045,
+    message: 'Internal server error',
+    httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
   },
 };
