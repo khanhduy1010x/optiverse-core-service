@@ -121,7 +121,16 @@ export class UserRepository {
   async changeUserRole(userId: string, role: UserRole): Promise<User | null> {
     return await this.userModel.findByIdAndUpdate(userId, { role }, { new: true }).lean();
   }
-async removeAccount(userId: string): Promise<void> {
-  await this.userModel.deleteOne({ _id: userId });
-}
+
+  async addOpCredits(userId: string, amount: number): Promise<User | null> {
+    return await this.userModel.findByIdAndUpdate(
+      userId,
+      { $inc: { op_credits: amount } },
+      { new: true }
+    ).lean();
+  }
+
+  async removeAccount(userId: string): Promise<void> {
+    await this.userModel.deleteOne({ _id: userId });
+  }
 }

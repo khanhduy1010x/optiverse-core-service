@@ -2,7 +2,7 @@ import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards, Request }
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/passport/jwt-auth.guard';
 import { RolesGuard } from '../../auth/passport/roles.guard';
-import { Roles } from '../../auth/decorator/customize';
+import { Public, Roles } from '../../auth/decorator/customize';
 import { UserRole } from '../users/user.schema';
 import { MembershipPackageService } from './membership-package.service';
 import { CreateMembershipPackageDto, UpdateMembershipPackageDto } from './dto/membership-package.dto';
@@ -55,6 +55,36 @@ export class MembershipPackageController {
   @ApiOperation({ summary: 'Get all active membership packages' })
   async getAllMembershipPackages(@Request() req: any) {
     const packages = await this.membershipPackageService.getAllMembershipPackages();
+
+    return new ApiResponse(packages);
+  }
+
+  /**
+   * Get membership package by ID
+   */
+  @Get('by-id/:packageId')
+  @Public()
+  @ApiOperation({ summary: 'Get membership package by ID' })
+  async getMembershipPackageById(
+    @Param('packageId') packageId: string,
+    @Request() req: any,
+  ) {
+    const package_ = await this.membershipPackageService.getMembershipPackageById(packageId);
+
+    return new ApiResponse(package_);
+  }
+
+  /**
+   * Get membership packages by list of IDs
+   */
+  @Post('by-ids')
+  @Public()
+  @ApiOperation({ summary: 'Get membership packages by list of IDs' })
+  async getMembershipPackagesByIds(
+    @Body() body: { packageIds: string[] },
+    @Request() req: any,
+  ) {
+    const packages = await this.membershipPackageService.getMembershipPackagesByIds(body.packageIds);
 
     return new ApiResponse(packages);
   }

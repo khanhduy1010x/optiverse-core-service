@@ -47,6 +47,12 @@ export class UserMembership {
   })
   status: MembershipStatus;
 
+  @Prop({
+    type: Object,
+    required: false
+  })
+  package_snapshot?: any;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

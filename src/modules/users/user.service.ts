@@ -101,4 +101,20 @@ export class UserService {
     }
     return updatedUser;
   }
+
+  /**
+   * Add OP credits to user
+   */
+  async addOpCredits(userId: string, amount: number): Promise<User | null> {
+    if (amount <= 0) {
+      throw new AppException(ErrorCode.INVALID_REQUEST);
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    return await this.userRepository.addOpCredits(userId, amount);
+  }
 }

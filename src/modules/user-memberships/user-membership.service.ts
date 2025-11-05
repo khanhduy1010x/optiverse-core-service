@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Types,Model } from 'mongoose';
 import { UserMembership, UserMembershipDocument, MembershipStatus } from './user-membership.schema';
 import { MembershipPackage, MembershipPackageDocument } from '../membership-packages/membership-package.schema';
+import { UserService } from '../users/user.service';
 
 @Injectable()
 export class UserMembershipService {
@@ -11,6 +12,7 @@ export class UserMembershipService {
     private userMembershipModel: Model<UserMembershipDocument>,
     @InjectModel(MembershipPackage.name) 
     private membershipPackageModel: Model<MembershipPackageDocument>,
+    private userService: UserService,
   ) {}
 
   /**
@@ -79,8 +81,8 @@ export class UserMembershipService {
 
     // Create new membership
     const newMembership = new this.userMembershipModel({
-      user_id: userId,
-      package_id: packageId,
+      user_id: new Types.ObjectId(userId),
+      package_id: new Types.ObjectId(packageId),
       start_date: startDate,
       end_date: endDate,
       status: MembershipStatus.ACTIVE
@@ -154,5 +156,78 @@ export class UserMembershipService {
       .populate('package_id')
       .sort({ created_at: -1 })
       .exec();
+  }
+
+  /**
+   * Update membership: create new if not exist, upgrade/extend based on level
+   * Returns membership info with package details
+   */
+  async updateMembership(userId: string, packageId: string): Promise<{ membership: UserMembershipDocument; package: any }> {
+    const newPackage = await this.membershipPackageModel.findById(packageId);
+    if (!newPackage) {
+      throw new Error('Membership package not found');
+    }
+
+    const activeMembership = await this.getActiveMembership(userId);
+
+    let updatedMembership: UserMembershipDocument;
+
+    if (!activeMembership) {
+      updatedMembership = await this.createMembership(userId, packageId);
+    } else {
+      const currentPackage = activeMembership.package_id as any;
+      const currentLevel = currentPackage.level || 0;
+      const newLevel = newPackage.level || 0;
+
+      if (newLevel > currentLevel) {
+        const packageSnapshot = {
+          name: newPackage.name,
+          level: newPackage.level,
+          price: newPackage.price,
+          duration_days: newPackage.duration_days,
+          opBonusCredits: newPackage.opBonusCredits,
+        };
+
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + newPackage.duration_days);
+
+        activeMembership.package_id = new Types.ObjectId(packageId);
+        activeMembership.start_date = new Date();
+        activeMembership.end_date = endDate;
+        (activeMembership as any).package_snapshot = packageSnapshot;
+
+        await this.userMembershipModel.updateMany(
+          { user_id: userId, status: MembershipStatus.ACTIVE, _id: { $ne: activeMembership._id } },
+          { status: MembershipStatus.CANCELLED }
+        );
+
+        updatedMembership = await activeMembership.save();
+      } else if (newLevel === currentLevel) {
+        const additionalDays = newPackage.duration_days;
+        activeMembership.end_date.setDate(activeMembership.end_date.getDate() + additionalDays);
+
+        updatedMembership = await activeMembership.save();
+      } else {
+        updatedMembership = activeMembership;
+      }
+    }
+
+    // Add OP bonus credits to user
+    if (newPackage.opBonusCredits && newPackage.opBonusCredits > 0) {
+      try {
+        await this.userService.addOpCredits(userId, newPackage.opBonusCredits);
+      } catch (error) {
+        console.error(`Failed to add OP credits to user ${userId}:`, error);
+        // Don't throw error, membership update is successful even if OP addition fails
+      }
+    }
+
+    // Populate package info and return both membership and package
+    await updatedMembership.populate('package_id');
+    
+    return {
+      membership: updatedMembership,
+      package: newPackage.toObject?.() || newPackage,
+    };
   }
 }
