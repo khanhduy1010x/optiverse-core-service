@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Post, Body, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/passport/jwt-auth.guard';
 import { UserMembershipService } from './user-membership.service';
@@ -138,5 +138,30 @@ export class UserMembershipController {
           priority_listing: false,
         };
     }
+  }
+
+  @Post('update')
+  @Public()
+  async updateMembership(
+    @Body() body: { packageId: string; userId: string },
+    @Req() req: any,
+  ) {
+    if (!body.userId || !body.packageId) {
+      throw new AppException(ErrorCode.NOT_FOUND);
+    }
+
+    const result = await this.userMembershipService.updateMembership(
+      body.userId,
+      body.packageId,
+    );
+
+    return {
+      data: {
+        membership: result.membership,
+        package: result.package,
+      },
+      message: 'Membership updated successfully',
+      statusCode: 200,
+    };
   }
 }

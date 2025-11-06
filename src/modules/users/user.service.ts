@@ -39,6 +39,13 @@ export class UserService {
     return await this.userRepository.findByEmail(email);
   }
 
+  /**
+   * Get user profile with current membership info
+   */
+  async findOneByEmailWithMembership(email: string): Promise<any | null> {
+    return await this.userRepository.findByEmailWithMembership(email);
+  }
+
   async updateVerifyAccount(email: string): Promise<User | null> {
     return await this.userRepository.updateVerifyAccount(email);
   }
@@ -100,5 +107,21 @@ export class UserService {
       throw new AppException(ErrorCode.SERVER_ERROR);
     }
     return updatedUser;
+  }
+
+  /**
+   * Add OP credits to user
+   */
+  async addOpCredits(userId: string, amount: number): Promise<User | null> {
+    if (amount <= 0) {
+      throw new AppException(ErrorCode.INVALID_REQUEST);
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    return await this.userRepository.addOpCredits(userId, amount);
   }
 }

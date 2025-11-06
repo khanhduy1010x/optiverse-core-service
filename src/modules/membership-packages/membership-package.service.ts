@@ -137,6 +137,36 @@ export class MembershipPackageService {
   }
 
   /**
+   * Get membership package by ID with subscriber count
+   */
+  async getMembershipPackageById(packageId: string): Promise<any> {
+    const pkg = await this.membershipPackageModel.findById(packageId);
+
+    if (!pkg) {
+      throw new AppException(ErrorCode.MEMBERSHIP_PACKAGE_NOT_FOUND);
+    }
+
+ 
+
+    return {
+      ...pkg.toObject(),
+    };
+  }
+
+  /**
+   * Get membership packages by list of IDs
+   */
+  async getMembershipPackagesByIds(packageIds: string[]): Promise<any[]> {
+    const packages = await this.membershipPackageModel.find({
+      _id: { $in: packageIds },
+    });
+
+    return packages.map(pkg => ({
+      ...pkg.toObject(),
+    }));
+  }
+
+  /**
    * Get package by level (for internal use - no error thrown)
    */
   async getPackageByLevelSafe(level: number): Promise<MembershipPackage | null> {

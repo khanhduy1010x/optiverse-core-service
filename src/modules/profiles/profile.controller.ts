@@ -57,7 +57,7 @@ export class ProfileController {
   @Get('')
   async getProfile(@Request() req) {
     const user = req.user as JwtPayload;
-    const profile = await this.userService.findOneByEmail(user.email);
+    const profile = await this.userService.findOneByEmailWithMembership(user.email);
     return profile;
   }
 

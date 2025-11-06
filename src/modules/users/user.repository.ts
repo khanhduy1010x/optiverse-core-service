@@ -3,10 +3,14 @@ import { Model } from 'mongoose';
 import { User, UserStatus, UserRole } from './user.schema';
 import { Injectable } from '@nestjs/common';
 import { UpdateProfileRequest } from '../profiles/dto/request/UpdateProfileRequest.dto';
+import { UserMembership } from '../user-memberships/user-membership.schema';
 
 @Injectable()
 export class UserRepository {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(UserMembership.name) private readonly membershipModel: Model<UserMembership>,
+  ) {}
 
   async findAll(): Promise<User[]> {
     return await this.userModel.find().lean();
@@ -121,7 +125,59 @@ export class UserRepository {
   async changeUserRole(userId: string, role: UserRole): Promise<User | null> {
     return await this.userModel.findByIdAndUpdate(userId, { role }, { new: true }).lean();
   }
-async removeAccount(userId: string): Promise<void> {
-  await this.userModel.deleteOne({ _id: userId });
-}
+
+  async addOpCredits(userId: string, amount: number): Promise<User | null> {
+    return await this.userModel.findByIdAndUpdate(
+      userId,
+      { $inc: { op_credits: amount } },
+      { new: true }
+    ).lean();
+  }
+
+  async removeAccount(userId: string): Promise<void> {
+    await this.userModel.deleteOne({ _id: userId });
+  }
+
+  /**
+   * Get user profile with current membership info
+   */
+  async findByEmailWithMembership(email: string): Promise<any | null> {
+    const user = await this.userModel.findOne({ email }).lean();
+    if (!user) {
+      return null;
+    }
+
+    const { password_hash, ...userWithoutPassword } = user;
+    const has_password = !!password_hash;
+
+    // Get current active membership
+    const membership = await this.membershipModel
+      .findOne({
+        user_id: user._id,
+        status: 'active',
+        end_date: { $gte: new Date() },
+      })
+      .populate('package_id')
+      .lean();
+
+    // Build response
+    const response: any = {
+      ...userWithoutPassword,
+      has_password,
+      membership: null,
+    };
+
+    if (membership) {
+      response.membership = {
+        package_id: membership.package_id,
+        level: membership.package_snapshot?.level,
+        name: membership.package_snapshot?.name,
+        start_date: membership.start_date,
+        end_date: membership.end_date,
+        status: membership.status,
+      };
+    }
+
+    return response;
+  }
 }
