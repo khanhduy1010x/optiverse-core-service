@@ -39,6 +39,13 @@ export class UserService {
     return await this.userRepository.findByEmail(email);
   }
 
+  /**
+   * Get user profile with current membership info
+   */
+  async findOneByEmailWithMembership(email: string): Promise<any | null> {
+    return await this.userRepository.findByEmailWithMembership(email);
+  }
+
   async updateVerifyAccount(email: string): Promise<User | null> {
     return await this.userRepository.updateVerifyAccount(email);
   }
