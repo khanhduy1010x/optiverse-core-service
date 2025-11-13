@@ -5,6 +5,7 @@ import { RolesGuard } from '../../auth/passport/roles.guard';
 import { Public, Roles } from '../../auth/decorator/customize';
 import { UserRole } from '../users/user.schema';
 import { MembershipPackageService } from './membership-package.service';
+import { UserMembershipService } from '../user-memberships/user-membership.service';
 import { CreateMembershipPackageDto, UpdateMembershipPackageDto } from './dto/membership-package.dto';
 import { ApiResponse } from '../../common/api-response';
 import { AppException } from '../../common/exceptions/app.exception';
@@ -15,7 +16,10 @@ import { ErrorCode } from '../../common/exceptions/error-code.enum';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class MembershipPackageController {
-  constructor(private readonly membershipPackageService: MembershipPackageService) {}
+  constructor(
+    private readonly membershipPackageService: MembershipPackageService,
+    private readonly userMembershipService: UserMembershipService,
+  ) {}
 
   /**
    * Create a new membership package (Admin only)
@@ -56,7 +60,20 @@ export class MembershipPackageController {
   async getAllMembershipPackages(@Request() req: any) {
     const packages = await this.membershipPackageService.getAllMembershipPackages();
 
-    return new ApiResponse(packages);
+    // Resolve current user's membership level via service
+    const user = req?.user;
+    const currentLevel: number = await this.userMembershipService.getUserMembershipLevel(
+      user?.user_id,
+    );
+    console.log('Current user membership level:', currentLevel);
+    // Mark packages that are NOT available (levels lower than user's current level)
+    const enriched = (packages || []).map((pkg: any) => {
+      const level = typeof pkg?.level === 'string' ? parseInt(pkg.level, 10) : Number(pkg?.level);
+      const disabled = !isNaN(level) ? level < currentLevel : false;
+      return { ...pkg, disabled };
+    });
+
+    return new ApiResponse(enriched);
   }
 
   /**
