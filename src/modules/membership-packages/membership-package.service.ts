@@ -179,53 +179,99 @@ export class MembershipPackageService {
   /**
    * Initialize default membership packages on app startup
    */
-  async initializeDefaultPackages(): Promise<void> {
-    try {
-      const existingPackages = await this.membershipPackageModel.find({});
-      
-      if (existingPackages.length > 0) {
-        console.log('📦 Membership packages already exist. Skipping initialization.');
-        return;
-      }
+async initializeDefaultPackages(): Promise<void> {
+  try {
+    const defaultPackages = [
+      // BASIC (level 0)
+      {
+        level: 0,
+        description: 'Basic weekly package',
+        price: 2990,
+        duration_days: 7,
+        opBonusCredits: 10,
+      },
+      {
+        level: 0,
+        description: 'Basic monthly package',
+        price: 9900,
+        duration_days: 30,
+        opBonusCredits: 30,
+      },
+      {
+        level: 0,
+        description: 'Basic yearly package',
+        price: 79900,
+        duration_days: 365,
+        opBonusCredits: 400,
+      },
 
-      const defaultPackages = [
-        {
-          level: 0, // BASIC
-          name: 'BASIC',
-          description: 'Perfect for getting started',
-          price: 999999,
-          duration_days: 999999, // Effectively unlimited
-          opBonusCredits: 0,
-          is_active: true,
-        },
-        {
-          level: 1, // PLUS
-          name: 'PLUS',
-          description: 'Best for active learners',
-          price: 999999999,
-          duration_days: 999999, // Effectively unlimited
-          opBonusCredits: 50000,
-          is_active: true,
-        },
-        {
-          level: 2, // BUSINESS
-          name: 'BUSINESS',
-          description: 'For power users',
-          price: 9999999999,
-          duration_days: 999999, // Effectively unlimited
-          opBonusCredits: 200000,
-          is_active: true,
-        },
-      ];
+      // PLUS (level 1)
+      {
+        level: 1,
+        description: 'Plus weekly package',
+        price: 4990,
+        duration_days: 7,
+        opBonusCredits: 30,
+      },
+      {
+        level: 1,
+        description: 'Plus monthly package',
+        price: 19900,
+        duration_days: 30,
+        opBonusCredits: 100,
+      },
+      {
+        level: 1,
+        description: 'Plus yearly package',
+        price: 179900,
+        duration_days: 365,
+        opBonusCredits: 1200,
+      },
 
-      await this.membershipPackageModel.insertMany(defaultPackages);
-      console.log('✅ Default membership packages initialized successfully!');
-      console.log('   - BASIC: 999 VND (unlimited access)');
-      console.log('   - PLUS: 999 VND (unlimited access, 50K OP bonus)');
-      console.log('   - BUSINESS: 9,999,999 VND (unlimited access, 200K OP bonus)');
-    } catch (error) {
-      console.error('❌ Failed to initialize default membership packages:', error);
-      throw error;
+      // BUSINESS (level 2)
+      {
+        level: 2,
+        description: 'Business weekly package',
+        price: 9990,
+        duration_days: 7,
+        opBonusCredits: 100,
+      },
+      {
+        level: 2,
+        description: 'Business monthly package',
+        price: 39900,
+        duration_days: 30,
+        opBonusCredits: 300,
+      },
+      {
+        level: 2,
+        description: 'Business yearly package',
+        price: 299000,
+        duration_days: 365,
+        opBonusCredits: 3000,
+      },
+    ];
+
+    for (const pkg of defaultPackages) {
+      await this.membershipPackageModel.updateOne(
+        { level: pkg.level, duration_days: pkg.duration_days }, // unique key
+        {
+          $set: {
+            description: pkg.description,
+            price: pkg.price,
+            opBonusCredits: pkg.opBonusCredits,
+            is_active: true,
+          },
+        },
+        { upsert: true }
+      );
     }
+
+    console.log('✅ Default membership packages (9 packages) initialized!');
+  } catch (error) {
+    console.error('❌ Failed to initialize membership packages:', error);
+    throw error;
   }
+}
+
 }
