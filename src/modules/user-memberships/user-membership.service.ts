@@ -230,4 +230,246 @@ export class UserMembershipService {
       package: newPackage.toObject?.() || newPackage,
     };
   }
+  
+  /**
+   * Get dashboard statistics for admin
+   * @param periodDays - Number of days to look back (7, 30, 90, 365)
+   */
+  async getDashboardStats(periodDays: number = 30) {
+    const now = new Date();
+    const periodStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
+    const expiringDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Get all packages
+    const packages = await this.membershipPackageModel.find({ is_active: true }).exec();
+
+    // Get all active memberships with package details
+    const activeMemberships = await this.userMembershipModel
+      .find({
+        status: MembershipStatus.ACTIVE,
+        end_date: { $gt: now }
+      })
+      .populate('package_id')
+      .exec();
+
+    // Calculate stats per package
+    const packageStats = await Promise.all(packages.map(async pkg => {
+      const pkgMemberships = activeMemberships.filter(
+        m => {
+          const packageId = m.package_id as any;
+          return packageId._id.toString() === pkg._id.toString();
+        }
+      );
+
+      // Count expired and cancelled for this package
+      const expiredCount = await this.userMembershipModel.countDocuments({
+        package_id: pkg._id,
+        status: MembershipStatus.EXPIRED
+      });
+
+      const cancelledCount = await this.userMembershipModel.countDocuments({
+        package_id: pkg._id,
+        status: MembershipStatus.CANCELLED
+      });
+
+      // Calculate new subscribers for this package in period
+      const newSubs = await this.userMembershipModel.countDocuments({
+        package_id: pkg._id,
+        createdAt: { $gte: periodStart }
+      });
+
+      // Calculate expiring for this package
+      const expiringForPkg = await this.userMembershipModel.countDocuments({
+        package_id: pkg._id,
+        status: MembershipStatus.ACTIVE,
+        end_date: { $gte: now, $lte: expiringDate }
+      });
+
+      const revenue = pkg.price * pkgMemberships.length;
+
+      // Format package name based on level and duration
+      let formattedName = pkg.name;
+      const levelNames = ['Basic', 'Plus', 'Business'];
+      const levelName = levelNames[pkg.level] || pkg.name;
+      
+      if (pkg.duration_days === 7) {
+        formattedName = `${levelName} Weekly`;
+      } else if (pkg.duration_days === 30) {
+        formattedName = `${levelName} Monthly`;
+      } else if (pkg.duration_days === 365) {
+        formattedName = `${levelName} Yearly`;
+      }
+
+      return {
+        packageId: pkg._id.toString(),
+        packageName: formattedName,
+        packageLevel: pkg.level,
+        level: pkg.level,
+        activeUsers: pkgMemberships.length,
+        expiredUsers: expiredCount,
+        cancelledUsers: cancelledCount,
+        revenue: revenue,
+        totalRevenue: revenue,
+        newSubscribers: newSubs,
+        expiringSubscribers: expiringForPkg,
+        percentageOfTotal: 0, // Will calculate after
+        averageDuration: pkg.duration_days,
+        conversionRate: 0 // Can be calculated if we have trial/conversion data
+      };
+    }));
+
+    // Get new subscribers in period
+    const newSubscribers = await this.userMembershipModel.countDocuments({
+      createdAt: { $gte: periodStart }
+    });
+
+    // Calculate total revenue and percentage
+    const totalRevenue = packageStats.reduce((sum, pkg) => sum + pkg.revenue, 0);
+    packageStats.forEach(pkg => {
+      pkg.percentageOfTotal = totalRevenue > 0 
+        ? Math.round((pkg.revenue / totalRevenue) * 100 * 10) / 10 
+        : 0;
+    });
+
+    // Get expiring subscriptions in next 7 days (total)
+    const expiringSubscribers = await this.userMembershipModel.countDocuments({
+      status: MembershipStatus.ACTIVE,
+      end_date: { $gte: now, $lte: expiringDate }
+    });
+
+    // Calculate monthly revenue for the last 12 months
+    const monthlyRevenue = await this.getMonthlyRevenue(12);
+
+    // Calculate total active users
+    const totalActiveUsers = packageStats.reduce((sum, pkg) => sum + pkg.activeUsers, 0);
+
+    return {
+      packages: packageStats,
+      monthlyRevenue,
+      totalRevenue,
+      totalActiveUsers,
+      newSubscribers7Days: newSubscribers,
+      expiringSubscribers7Days: expiringSubscribers
+    };
+  }
+
+  /**
+   * Get monthly revenue data for specified number of months
+   */
+  async getMonthlyRevenue(months: number = 12) {
+    const now = new Date();
+    const result: Array<{ month: string; revenue: number; subscribers: number }> = [];
+
+    for (let i = months - 1; i >= 0; i--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      
+      const monthName = monthDate.toLocaleString('default', { month: 'short' });
+
+      // Get memberships created in this month
+      const memberships = await this.userMembershipModel
+        .find({
+          createdAt: { $gte: monthDate, $lt: nextMonth }
+        })
+        .populate('package_id')
+        .exec();
+
+      // Calculate revenue for the month
+      const revenue = memberships.reduce((sum, membership) => {
+        const pkg = membership.package_id as any;
+        return sum + (pkg?.price || 0);
+      }, 0);
+
+      result.push({
+        month: monthName,
+        revenue,
+        subscribers: memberships.length
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Get subscription history with filtering
+   */
+  async getSubscriptionHistory(fromDate?: Date, toDate?: Date) {
+    const query: any = {};
+    
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) query.createdAt.$gte = fromDate;
+      if (toDate) query.createdAt.$lte = toDate;
+    }
+
+    const subscriptions = await this.userMembershipModel
+      .find(query)
+      .populate('user_id', 'email username')
+      .populate('package_id')
+      .sort({ createdAt: -1 })
+      .limit(100) // Limit to recent 100
+      .exec();
+
+    return subscriptions.map(sub => {
+      const user = sub.user_id as any;
+      const pkg = sub.package_id as any;
+
+      // Format package name based on level and duration
+      let formattedName = pkg?.name || 'Unknown';
+      if (pkg) {
+        const levelNames = ['Basic', 'Plus', 'Business'];
+        const levelName = levelNames[pkg.level] || pkg.name;
+        
+        if (pkg.duration_days === 7) {
+          formattedName = `${levelName} Weekly`;
+        } else if (pkg.duration_days === 30) {
+          formattedName = `${levelName} Monthly`;
+        } else if (pkg.duration_days === 365) {
+          formattedName = `${levelName} Yearly`;
+        }
+      }
+
+      return {
+        userId: user?._id?.toString() || '',
+        userName: user?.username || user?.email || 'Unknown',
+        packageName: formattedName,
+        packageLevel: pkg?.level,
+        startDate: sub.start_date,
+        endDate: sub.end_date,
+        status: sub.status,
+        revenue: pkg?.price || 0
+      };
+    });
+  }
+
+  /**
+   * Get expiring subscriptions in next N days
+   */
+  async getExpiringSubscriptions(days: number = 7) {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    const expiring = await this.userMembershipModel
+      .find({
+        status: MembershipStatus.ACTIVE,
+        end_date: { $gte: now, $lte: futureDate }
+      })
+      .populate('user_id', 'email username')
+      .populate('package_id')
+      .sort({ end_date: 1 })
+      .exec();
+
+    return expiring.map(sub => {
+      const user = sub.user_id as any;
+      const pkg = sub.package_id as any;
+
+      return {
+        userId: user?._id?.toString() || '',
+        userName: user?.username || user?.email || 'Unknown',
+        packageName: pkg?.name || 'Unknown',
+        endDate: sub.end_date,
+        daysRemaining: Math.ceil((sub.end_date.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      };
+    });
+  }
 }

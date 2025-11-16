@@ -12,7 +12,7 @@ import { ProfilesModule } from './modules/profiles/profile.module';
 import { LoggerMiddleware } from './common/logger/logger.middleware';
 import { UsersModule } from './modules/users/user.module';
 import { MembershipPackageModule } from './modules/membership-packages/membership-package.module';
-
+import { UserMembershipModule } from './modules/user-memberships/user-membership.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,7 +24,8 @@ import { MembershipPackageModule } from './modules/membership-packages/membershi
     AuthModule,
     ProfilesModule,
     OtpVerificationModule,
-    MembershipPackageModule
+    MembershipPackageModule,
+    UserMembershipModule
   ],
   controllers: [AppController],
   providers: [
