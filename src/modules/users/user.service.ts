@@ -46,6 +46,9 @@ export class UserService {
     return await this.userRepository.findByEmailWithMembership(email);
   }
 
+  async findOneByEmailWithPassword(email: string): Promise<User | null> {
+    return await this.userRepository.findOneByEmailWithPassword(email);
+  }
   async updateVerifyAccount(email: string): Promise<User | null> {
     return await this.userRepository.updateVerifyAccount(email);
   }
