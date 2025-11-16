@@ -237,8 +237,10 @@ export class AuthController {
     @Body() request: ChangePasswordRequest,
   ): Promise<ApiResponseWrapper<null>> {
     const user = req.user as JwtPayload;
-    const currentUser = await this.userService.findOneByEmail(user.email);
+    const currentUser = await this.userService.findOneByEmailWithPassword(user.email);
+    console.log('!currentUser?.password_hash:', !currentUser?.password_hash);
     if (!currentUser?.password_hash) {
+      console.log('Inside if block - user has no password hash');
       // Check if new password is empty
       if (!request.newPassword?.trim()) {
         throw new AppException(ErrorCode.NEW_PASSWORD_EMPTY);
