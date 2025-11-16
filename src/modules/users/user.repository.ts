@@ -73,7 +73,9 @@ export class UserRepository {
     }
     return user;
   }
-
+async findOneByEmailWithPassword(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email: email }).lean();
+  }
   async save(user: User): Promise<User | null> {
     return this.userModel.create(user);
   }
