@@ -1,5 +1,5 @@
-import { Controller, Get, Param, UseGuards, Post, Body, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Param, UseGuards, Post, Body, Req, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/passport/jwt-auth.guard';
 import { UserMembershipService } from './user-membership.service';
 import { ApiResponse } from '../../common/api-response';
@@ -163,5 +163,95 @@ export class UserMembershipController {
       message: 'Membership updated successfully',
       statusCode: 200,
     };
+  }
+
+  /**
+   * Get dashboard statistics for admin
+   * Returns aggregated membership statistics
+   */
+  @Get('statistics/dashboard')
+  @Public()
+  @ApiOperation({ summary: 'Get membership dashboard statistics' })
+  @ApiQuery({ name: 'period', required: false, description: 'Period in format: 7d, 30d, 90d, 12m' })
+  async getDashboardStatistics(@Query('period') period?: string) {
+    try {
+      // Parse period to days
+      let periodDays = 30; // Default 30 days
+      
+      if (period) {
+        if (period.endsWith('d')) {
+          periodDays = parseInt(period.replace('d', ''));
+        } else if (period.endsWith('m')) {
+          const months = parseInt(period.replace('m', ''));
+          periodDays = months * 30; // Approximate
+        }
+      }
+
+      const stats = await this.userMembershipService.getDashboardStats(periodDays);
+      return new ApiResponse(stats);
+    } catch (error) {
+      console.error('Error getting dashboard statistics:', error);
+      throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Get monthly revenue data
+   */
+  @Get('statistics/monthly-revenue')
+  @Public()
+  @ApiOperation({ summary: 'Get monthly revenue statistics' })
+  @ApiQuery({ name: 'months', required: false, description: 'Number of months to retrieve' })
+  async getMonthlyRevenue(@Query('months') months?: string) {
+    try {
+      const monthCount = months ? parseInt(months) : 12;
+      const revenue = await this.userMembershipService.getMonthlyRevenue(monthCount);
+      return new ApiResponse(revenue);
+    } catch (error) {
+      console.error('Error getting monthly revenue:', error);
+      throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Get subscription history with optional date filtering
+   */
+  @Get('statistics/subscriptions')
+  @Public()
+  @ApiOperation({ summary: 'Get subscription history' })
+  @ApiQuery({ name: 'from', required: false, description: 'Start date (ISO format)' })
+  @ApiQuery({ name: 'to', required: false, description: 'End date (ISO format)' })
+  async getSubscriptionHistory(
+    @Query('from') from?: string,
+    @Query('to') to?: string
+  ) {
+    try {
+      const fromDate = from ? new Date(from) : undefined;
+      const toDate = to ? new Date(to) : undefined;
+      
+      const history = await this.userMembershipService.getSubscriptionHistory(fromDate, toDate);
+      return new ApiResponse(history);
+    } catch (error) {
+      console.error('Error getting subscription history:', error);
+      throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Get expiring subscriptions
+   */
+  @Get('statistics/expiring')
+  @Public()
+  @ApiOperation({ summary: 'Get expiring subscriptions' })
+  @ApiQuery({ name: 'days', required: false, description: 'Days to look ahead (default: 7)' })
+  async getExpiringSubscriptions(@Query('days') days?: string) {
+    try {
+      const daysCount = days ? parseInt(days) : 7;
+      const expiring = await this.userMembershipService.getExpiringSubscriptions(daysCount);
+      return new ApiResponse(expiring);
+    } catch (error) {
+      console.error('Error getting expiring subscriptions:', error);
+      throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
   }
 }
