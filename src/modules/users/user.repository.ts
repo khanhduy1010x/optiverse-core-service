@@ -63,6 +63,9 @@ export class UserRepository {
   async findById(id: string): Promise<User | null> {
     return await this.userModel.findById(id).lean();
   }
+   async findByIdDelete(id: string): Promise<User | null> {
+    return await this.userModel.findById(id).where('isDeleted').equals(false).lean();
+  }
 
   async findByEmail(email: string): Promise<any | null> {
     const user = await this.userModel.findOne({ email }).lean(); // dùng .lean() để trả về plain object
@@ -139,6 +142,16 @@ export class UserRepository {
 
   async removeAccount(userId: string): Promise<void> {
     await this.userModel.deleteOne({ _id: userId });
+  }
+
+  async softDeleteUser(userId: string): Promise<User | null> {
+    return await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { isDeleted: true, password_hash: null },
+        { new: true }
+      )
+      .lean();
   }
 
   /**
