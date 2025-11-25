@@ -127,4 +127,21 @@ export class UserService {
 
     return await this.userRepository.addOpCredits(userId, amount);
   }
+
+  async softDeleteAccount(userId: string): Promise<User> {
+    const user = await this.userRepository.findByIdDelete(userId);
+    if (!user) {
+      throw new AppException(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (user.isDeleted) {
+      throw new AppException(ErrorCode.USER_ALREADY_DELETED);
+    }
+
+    const deletedUser = await this.userRepository.softDeleteUser(userId);
+    if (!deletedUser) {
+      throw new AppException(ErrorCode.SERVER_ERROR);
+    }
+    return deletedUser;
+  }
 }

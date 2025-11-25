@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Post,
+  Delete,
   UseGuards,
   Request,
   Body,
@@ -18,10 +19,12 @@ import { ChangeRoleRequest } from './dto/ChangeRoleRequest.dto';
 import { RoleChangeInterceptor } from '../../auth/interceptors/role-change.interceptor';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-code.enum';
+import { JwtAuthGuard } from '../../auth/passport/jwt-auth.guard';
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 @UseInterceptors(RoleChangeInterceptor)
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -123,6 +126,18 @@ export class UserController {
     }
 
     const user = await this.userService.changeUserRole(id, changeRoleRequest.role);
+    return new ApiResponse<User>(user);
+  }
+
+  @Delete(':id/delete-account')
+  @ApiOperation({ summary: 'Soft delete user account' })
+  @ApiParam({ name: 'id', description: 'User ID to delete' })
+  @UseGuards(JwtAuthGuard)
+  async softDeleteAccount(@Param('id') id: string, @Request() req: any): Promise<ApiResponse<User>> {
+    console.log('Delete account request:', { userId: id, reqUser: req.user });
+  
+
+    const user = await this.userService.softDeleteAccount(id);
     return new ApiResponse<User>(user);
   }
 }

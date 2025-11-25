@@ -45,6 +45,7 @@ export enum ErrorCode {
   MEMBERSHIP_PACKAGE_EXISTS,
   MEMBERSHIP_PACKAGE_NOT_FOUND,
   INTERNAL_SERVER_ERROR,
+  USER_ALREADY_DELETED,
 }
 export const ErrorDetails = {
   [ErrorCode.INVALID_CODE]: {
@@ -267,5 +268,10 @@ export const ErrorDetails = {
     code: 1045,
     message: 'Internal server error',
     httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorCode.USER_ALREADY_DELETED]: {
+    code: 1046,
+    message: 'User account already deleted',
+    httpStatus: HttpStatus.BAD_REQUEST,
   },
 };
